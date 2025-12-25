@@ -128,11 +128,11 @@ class Crypto
         $nonce = random_bytes(SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES);
         $encrypted = sodium_crypto_aead_aes256gcm_encrypt($data, '', $nonce, $key);
         // Use sodium's built-in base64 encoding for better compatibility
-if ($this->mode === self::MODE_URL_SAFE) {
-    $result = sodium_bin2base64($nonce . $encrypted, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
-} else {
-    $result = base64_encode($nonce . $encrypted);
-}
+        if ($this->mode === self::MODE_URL_SAFE) {
+            $result = sodium_bin2base64($nonce . $encrypted, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+        } else {
+            $result = base64_encode($nonce . $encrypted);
+        }
 
         // 根据模式进行处理
         if ($this->mode === self::MODE_COMPACT) {
@@ -276,8 +276,6 @@ if ($this->mode === self::MODE_URL_SAFE) {
         return \md5($str . $salt);
     }
     
-
-    
     /**
      * 密码哈希加密
      * @param string $str 待加密密码
@@ -310,7 +308,7 @@ if ($this->mode === self::MODE_URL_SAFE) {
     {
         return \hash_hmac($algo, $str, $key);
     }
-
+    
     /**
      * SSL对称加密
      * @param string $str 待加密字符串

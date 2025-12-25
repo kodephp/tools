@@ -4,6 +4,8 @@ use Kode\Array\Arr;
 use Kode\String\Str;
 use Kode\Time\Time;
 use Kode\Crypto\Crypto;
+use Kode\Geo\Geo;
+use Kode\Ip\Ip;
 
 if (!function_exists('arr_get')) {
     /**
@@ -198,5 +200,56 @@ if (!function_exists('arr_multi_sort')) {
     function arr_multi_sort(array $array, array $keys, array $orders = []): array
     {
         return Arr::multiSort($array, $keys, $orders);
+    }
+}
+
+if (!function_exists('geo_distance')) {
+    /**
+     * Calculate distance between two coordinates
+     * @param float $lat1 Latitude of first point
+     * @param float $lon1 Longitude of first point
+     * @param float $lat2 Latitude of second point
+     * @param float $lon2 Longitude of second point
+     * @param string $unit Unit of measurement (km, mi, m)
+     * @return float Distance between points
+     */
+    function geo_distance(float $lat1, float $lon1, float $lat2, float $lon2, string $unit = 'km'): float
+    {
+        return Geo::distance($lat1, $lon1, $lat2, $lon2, $unit);
+    }
+}
+
+if (!function_exists('ip_get_real')) {
+    /**
+     * Get real client IP address
+     * @return string|null Real IP address or null if not found
+     */
+    function ip_get_real(): ?string
+    {
+        return Ip::getRealIp();
+    }
+}
+
+if (!function_exists('ip_is_valid')) {
+    /**
+     * Validate IP address format
+     * @param string $ip IP address to validate
+     * @return bool True if valid IP address
+     */
+    function ip_is_valid(string $ip): bool
+    {
+        return Ip::isValid($ip);
+    }
+}
+
+if (!function_exists('ip_is_private')) {
+    /**
+     * Check if IP address is private/internal
+     * @param string $ip IP address to check
+     * @return bool True if private IP
+     */
+    function ip_is_private(string $ip): bool
+    {
+        return Ip::isPrivate($ip);
     }
 }
