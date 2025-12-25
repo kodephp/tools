@@ -201,11 +201,15 @@ class Arr
      */
     public static function deepMerge(array $array1, array $array2): array
     {
-        foreach ($array2 as $key => $value) {
-            if (is_array($value) && isset($array1[$key]) && is_array($array1[$key])) {
-                $array1[$key] = self::deepMerge($array1[$key], $value);
-            } else {
-                $array1[$key] = $value;
+        $stack = [[&$array1, &$array2]];
+        while (!empty($stack)) {
+            [$arr1, $arr2] = array_pop($stack);
+            foreach ($arr2 as $key => $value) {
+                if (is_array($value) && isset($arr1[$key]) && is_array($arr1[$key])) {
+                    $stack[] = [[&$arr1[$key], &$value]];
+                } else {
+                    $arr1[$key] = $value;
+                }
             }
         }
         return $array1;
@@ -361,6 +365,59 @@ class Arr
     }
 
     /**
+     * 多维数组排序
+     * @param array $array 数组
+     * @param array $keys 排序键列表
+     * @param array $orders 排序顺序列表
+     * @return array 排序后的数组
+     */
+    public static function multiSort(array $array, array $keys, array $orders = []): array
+    {
+        // Create a copy to avoid mutating the original array
+        $sorted = $array;
+        
+        usort($sorted, function ($a, $b) use ($keys, $orders) {
+            foreach ($keys as $index => $key) {
+                $hasA = array_key_exists($key, $a);
+                $hasB = array_key_exists($key, $b);
+                
+                // Handle cases where one item has the key and the other doesn't
+                if (!$hasA && !$hasB) {
+                    continue;
+                } elseif (!$hasA) {
+                    // Treat missing values as less than existing values by default
+                    return ($orders[$index] ?? 'asc') === 'asc' ? -1 : 1;
+                } elseif (!$hasB) {
+                    return ($orders[$index] ?? 'asc') === 'asc' ? 1 : -1;
+                }
+                
+                $valA = $a[$key];
+                $valB = $b[$key];
+                
+                // Strict equality check first
+                if ($valA === $valB) {
+                    continue;
+                }
+                
+                $order = $orders[$index] ?? 'asc';
+                $isAscending = $order === 'asc';
+                
+                // Type-safe comparison
+                if (is_string($valA) && is_string($valB)) {
+                    $result = strcmp($valA, $valB);
+                } else {
+                    $result = $valA < $valB ? -1 : 1;
+                }
+                
+                return $isAscending ? $result : -$result;
+            }
+            return 0;
+        });
+        
+        return $sorted;
+    }
+
+    /**
      * 数组去重
      * @param array $array 数组
      * @param bool $strict 是否严格比较
@@ -369,6 +426,25 @@ class Arr
     public static function unique(array $array, bool $strict = true): array
     {
         return array_unique($array, $strict ? SORT_REGULAR : SORT_STRING);
+    }
+
+    /**
+     * 多维数组去重
+     * @param array $array 数组
+     * @param string $key 去重键名
+     * @return array 去重后的数组
+     */
+    public static function multiUnique(array $array, string $key): array
+    {
+        $result = [];
+        $temp = [];
+        foreach ($array as $item) {
+            if (!in_array($item[$key], $temp)) {
+                $temp[] = $item[$key];
+                $result[] = $item;
+            }
+        }
+        return $result;
     }
 
     /**

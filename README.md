@@ -192,6 +192,20 @@ $equal = Math::equal(0.1 + 0.2, 0.3); // true
 
 // 数值格式化
 $formatted = Math::format(1234567.89, 2, true); // 1,234,567.89
+
+// 三角函数
+$sin = Math::sin(Math::deg2rad(30)); // 0.5
+$cos = Math::cos(Math::deg2rad(60)); // 0.5
+$tan = Math::tan(Math::deg2rad(45)); // 1.0
+
+// 对数运算
+$ln = Math::ln(exp(1)); // 1.0
+$log10 = Math::log10(100); // 2.0
+$log = Math::log(8, 2); // 3.0
+
+// 角度弧度转换
+$radians = Math::deg2rad(180); // 3.1415926536
+$degrees = Math::rad2deg(M_PI); // 180.0
 ```
 
 ## 基本使用
@@ -236,6 +250,71 @@ $array = Arr::set($array, 'key', 'value');
 $exists = Arr::has($array, 'key');
 $only = Arr::only($array, ['key1', 'key2']);
 $except = Arr::except($array, ['key1', 'key2']);
+
+// 数组深度合并
+$array1 = [
+    'user' => [
+        'name' => '张三',
+        'age' => 25
+    ],
+    'settings' => [
+        'theme' => 'dark'
+    ]
+];
+
+$array2 = [
+    'user' => [
+        'age' => 26,
+        'email' => 'user@example.com'
+    ],
+    'settings' => [
+        'language' => 'zh-CN'
+    ]
+];
+
+$merged = Arr::deepMerge($array1, $array2);
+// 输出:
+// [
+//     'user' => [
+//         'name' => '张三',
+//         'age' => 26,
+//         'email' => 'user@example.com'
+//     ],
+//     'settings' => [
+//         'theme' => 'dark',
+//         'language' => 'zh-CN'
+//     ]
+// ]
+
+// 多维数组排序
+$data = [
+    ['name' => '张三', 'age' => 25, 'score' => 90],
+    ['name' => '李四', 'age' => 22, 'score' => 85],
+    ['name' => '王五', 'age' => 28, 'score' => 95]
+];
+
+// 按年龄升序，分数降序排序
+$sorted = Arr::multiSort($data, ['age', 'score'], ['asc', 'desc']);
+// 输出:
+// [
+//     ['name' => '李四', 'age' => 22, 'score' => 85],
+//     ['name' => '张三', 'age' => 25, 'score' => 90],
+//     ['name' => '王五', 'age' => 28, 'score' => 95]
+// ]
+
+// 多维数组去重
+$data = [
+    ['id' => 1, 'name' => '张三'],
+    ['id' => 2, 'name' => '李四'],
+    ['id' => 1, 'name' => '张三']
+];
+
+$unique = Arr::multiUnique($data, 'id');
+// 输出:
+// [
+//     ['id' => 1, 'name' => '张三'],
+//     ['id' => 2, 'name' => '李四']
+// ]
 ```
 
 ### 字符串处理使用示例

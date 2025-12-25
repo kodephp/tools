@@ -187,4 +187,141 @@ class Math
         $formatted = number_format((float)$num, $precision, '.', $thousandsSeparator ? ',' : '');
         return $formatted;
     }
+
+    /**
+     * 正弦函数
+     * @param float|int|string $num 弧度值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function sin(float|int|string $num, int $scale = 10): float
+    {
+        return round(sin((float)$num), $scale);
+    }
+
+    /**
+     * 余弦函数
+     * @param float|int|string $num 弧度值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function cos(float|int|string $num, int $scale = 10): float
+    {
+        return round(cos((float)$num), $scale);
+    }
+
+    /**
+     * 正切函数
+     * @param float|int|string $num 弧度值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function tan(float|int|string $num, int $scale = 10): float
+    {
+        return round(tan((float)$num), $scale);
+    }
+
+    /**
+     * 反正弦函数
+     * @param float|int|string $num 数值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function asin(float|int|string $num, int $scale = 10): float
+    {
+        if ($num < -1 || $num > 1) {
+            throw new \InvalidArgumentException('数值必须在[-1, 1]范围内');
+        }
+        return round(asin((float)$num), $scale);
+    }
+
+    /**
+     * 反余弦函数
+     * @param float|int|string $num 数值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function acos(float|int|string $num, int $scale = 10): float
+    {
+        if ($num < -1 || $num > 1) {
+            throw new \InvalidArgumentException('数值必须在[-1, 1]范围内');
+        }
+        return round(acos((float)$num), $scale);
+    }
+
+    /**
+     * 反正切函数
+     * @param float|int|string $num 数值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function atan(float|int|string $num, int $scale = 10): float
+    {
+        return round(atan((float)$num), $scale);
+    }
+
+    /**
+     * 自然对数
+     * @param float|int|string $num 数值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function ln(float|int|string $num, int $scale = 10): float
+    {
+        if ($num <= 0) {
+            throw new \InvalidArgumentException('数值必须大于0');
+        }
+        return round(log((float)$num), $scale);
+    }
+
+    /**
+     * 常用对数
+     * @param float|int|string $num 数值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function log10(float|int|string $num, int $scale = 10): float
+    {
+        if ($num <= 0) {
+            throw new \InvalidArgumentException('数值必须大于0');
+        }
+        return round(log10((float)$num), $scale);
+    }
+
+    /**
+     * 自定义底数对数
+     * @param float|int|string $num 数值
+     * @param float|int|string $base 底数
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function log(float|int|string $num, float|int|string $base, int $scale = 10): float
+    {
+        if ($num <= 0 || $base <= 0 || $base == 1) {
+            throw new \InvalidArgumentException('数值必须大于0，底数必须大于0且不等于1');
+        }
+        return round(log((float)$num, (float)$base), $scale);
+    }
+
+    /**
+     * 弧度转角度
+     * @param float|int|string $num 弧度值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function rad2deg(float|int|string $num, int $scale = 10): float
+    {
+        return round(rad2deg((float)$num), $scale);
+    }
+
+    /**
+     * 角度转弧度
+     * @param float|int|string $num 角度值
+     * @param int $scale 保留小数位数
+     * @return float 结果
+     */
+    public static function deg2rad(float|int|string $num, int $scale = 10): float
+    {
+        return round(deg2rad((float)$num), $scale);
+    }
 }
