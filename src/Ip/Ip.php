@@ -3,20 +3,20 @@
 namespace Kode\Ip;
 
 /**
- * IP address utility class
- * Provides IP address retrieval, validation, and manipulation
+ * IP地址工具类
+ * 提供IP地址检索、验证和操作功能
  */
 class Ip
 {
     /**
-     * Get real client IP address
-     * @return string|null Real IP address or null if not found
+     * 获取真实客户端IP地址
+     * @return string|null 真实IP地址，如果未找到则返回null
      */
     public static function getRealIp(): ?string
     {
         $ip = null;
         
-        // Check common proxy headers first
+        // 首先检查常见的代理头
         $headers = [
             'HTTP_X_FORWARDED_FOR',
             'HTTP_X_REAL_IP',
@@ -39,7 +39,7 @@ class Ip
             }
         }
         
-        // Fallback to REMOTE_ADDR
+        // 回退到REMOTE_ADDR
         if (isset($_SERVER['REMOTE_ADDR']) && self::isValid($_SERVER['REMOTE_ADDR'])) {
             return $_SERVER['REMOTE_ADDR'];
         }
@@ -48,9 +48,9 @@ class Ip
     }
 
     /**
-     * Validate IP address format
-     * @param string $ip IP address to validate
-     * @return bool True if valid IP address
+     * 验证IP地址格式
+     * @param string $ip 要验证的IP地址
+     * @return bool 如果IP地址有效则返回true
      */
     public static function isValid(string $ip): bool
     {

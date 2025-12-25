@@ -205,13 +205,13 @@ if (!function_exists('arr_multi_sort')) {
 
 if (!function_exists('geo_distance')) {
     /**
-     * Calculate distance between two coordinates
-     * @param float $lat1 Latitude of first point
-     * @param float $lon1 Longitude of first point
-     * @param float $lat2 Latitude of second point
-     * @param float $lon2 Longitude of second point
-     * @param string $unit Unit of measurement (km, mi, m)
-     * @return float Distance between points
+     * 计算两个坐标之间的距离
+     * @param float $lat1 第一个点的纬度
+     * @param float $lon1 第一个点的经度
+     * @param float $lat2 第二个点的纬度
+     * @param float $lon2 第二个点的经度
+     * @param string $unit 计量单位（km, mi, m）
+     * @return float 两点之间的距离
      */
     function geo_distance(float $lat1, float $lon1, float $lat2, float $lon2, string $unit = 'km'): float
     {
@@ -221,8 +221,8 @@ if (!function_exists('geo_distance')) {
 
 if (!function_exists('ip_get_real')) {
     /**
-     * Get real client IP address
-     * @return string|null Real IP address or null if not found
+     * 获取真实客户端IP地址
+     * @return string|null 真实IP地址，如果未找到则返回null
      */
     function ip_get_real(): ?string
     {
@@ -232,9 +232,9 @@ if (!function_exists('ip_get_real')) {
 
 if (!function_exists('ip_is_valid')) {
     /**
-     * Validate IP address format
-     * @param string $ip IP address to validate
-     * @return bool True if valid IP address
+     * 验证IP地址格式
+     * @param string $ip 要验证的IP地址
+     * @return bool 如果IP地址有效则返回true
      */
     function ip_is_valid(string $ip): bool
     {
@@ -244,9 +244,9 @@ if (!function_exists('ip_is_valid')) {
 
 if (!function_exists('ip_is_private')) {
     /**
-     * Check if IP address is private/internal
-     * @param string $ip IP address to check
-     * @return bool True if private IP
+     * 检查IP地址是否为私有/内部IP
+     * @param string $ip 要检查的IP地址
+     * @return bool 如果是私有IP则返回true
      */
     function ip_is_private(string $ip): bool
     {

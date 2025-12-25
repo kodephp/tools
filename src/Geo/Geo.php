@@ -3,34 +3,34 @@
 namespace Kode\Geo;
 
 /**
- * Geographical location utility class
- * Provides distance calculation between coordinates and location-related operations
+ * 地理位置工具类
+ * 提供坐标之间的距离计算和位置相关操作
  */
 class Geo
 {
     /**
-     * Earth radius in kilometers (WGS84 ellipsoid)
+     * 地球半径（公里，WGS84椭球体）
      */
     private const EARTH_RADIUS_KM = 6378.137;
     
     /**
-     * Earth radius in miles
+     * 地球半径（英里）
      */
     private const EARTH_RADIUS_MI = 3963.191;
     
     /**
-     * Earth radius in meters
+     * 地球半径（米）
      */
     private const EARTH_RADIUS_M = 6378137;
 
     /**
-     * Calculate distance between two coordinates using Haversine formula
-     * @param float $lat1 Latitude of first point
-     * @param float $lon1 Longitude of first point
-     * @param float $lat2 Latitude of second point
-     * @param float $lon2 Longitude of second point
-     * @param string $unit Unit of measurement (km, mi, m)
-     * @return float Distance between points
+     * 使用Haversine公式计算两个坐标之间的距离
+     * @param float $lat1 第一个点的纬度
+     * @param float $lon1 第一个点的经度
+     * @param float $lat2 第二个点的纬度
+     * @param float $lon2 第二个点的经度
+     * @param string $unit 计量单位（km, mi, m）
+     * @return float 两点之间的距离
      */
     public static function distance(float $lat1, float $lon1, float $lat2, float $lon2, string $unit = 'km'): float
     {
@@ -51,9 +51,9 @@ class Geo
     }
 
     /**
-     * Convert coordinates to radians
-     * @param float $degrees Degrees value
-     * @return float Radians value
+     * 将角度转换为弧度
+     * @param float $degrees 角度值
+     * @return float 弧度值
      */
     public static function toRadians(float $degrees): float
     {
@@ -61,9 +61,9 @@ class Geo
     }
 
     /**
-     * Convert radians to degrees
-     * @param float $radians Radians value
-     * @return float Degrees value
+     * 将弧度转换为角度
+     * @param float $radians 弧度值
+     * @return float 角度值
      */
     public static function toDegrees(float $radians): float
     {
@@ -71,10 +71,10 @@ class Geo
     }
 
     /**
-     * Validate coordinates
-     * @param float $lat Latitude
-     * @param float $lon Longitude
-     * @return bool True if valid coordinates
+     * 验证坐标是否有效
+     * @param float $lat 纬度
+     * @param float $lon 经度
+     * @return bool 如果坐标有效则返回true
      */
     public static function isValid(float $lat, float $lon): bool
     {
@@ -82,12 +82,12 @@ class Geo
     }
 
     /**
-     * Calculate midpoint between two coordinates
-     * @param float $lat1 Latitude of first point
-     * @param float $lon1 Longitude of first point
-     * @param float $lat2 Latitude of second point
-     * @param float $lon2 Longitude of second point
-     * @return array Midpoint coordinates [lat, lon]
+     * 计算两个坐标之间的中点
+     * @param float $lat1 第一个点的纬度
+     * @param float $lon1 第一个点的经度
+     * @param float $lat2 第二个点的纬度
+     * @param float $lon2 第二个点的经度
+     * @return array 中点坐标 [lat, lon]
      */
     public static function midpoint(float $lat1, float $lon1, float $lat2, float $lon2): array
     {

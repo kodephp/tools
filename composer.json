@@ -3,7 +3,7 @@
     "description": "PHP8.3+通用工具包，包含数组处理、字符串处理、时间处理、加解密等功能",
     "type": "library",
     "license": "MIT",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "keywords": ["php", "array", "string", "time", "message", "crypto", "tree", "tools"],
     "homepage": "https://github.com/kode/tools",
     "authors": [
