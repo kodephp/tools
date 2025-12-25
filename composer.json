@@ -1,0 +1,35 @@
+{
+    "name": "kode/tools",
+    "description": "PHP8.3+通用工具包，包含数组处理、字符串处理、时间处理、加解密等功能",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["php", "array", "string", "time", "message", "crypto", "tree", "tools"],
+    "homepage": "https://github.com/kode/tools",
+    "authors": [
+        {
+            "name": "Kode Team",
+            "email": "team@kode.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "ext-openssl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Kode\\": "src/"
+        },
+        "files": [
+            "src/Helper/helper.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Kode\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

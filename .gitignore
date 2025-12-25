@@ -1,0 +1,57 @@
+# Composer
+/vendor/
+composer.lock
+
+# PHPUnit
+phpunit.xml
+.phpunit.result.cache
+/tests/_output/
+/tests/_support/_generated/
+
+# Logs
+/logs/
+*.log
+
+# Temporary files
+/tmp/
+*.tmp
+*.temp
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.trae
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Build files
+/build/
+/dist/
+
+# Coverage reports
+/coverage/
+*.cov
+
+# PHPStorm
+.idea/
+
+# VSCode
+.vscode/
+
+# NetBeans
+nbproject/
+
+# Eclipse
+.project
+.classpath
+.settings/
