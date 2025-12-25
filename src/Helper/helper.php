@@ -132,3 +132,71 @@ if (!function_exists('crypto_encrypt')) {
         return Crypto::encrypt($str, $key);
     }
 }
+
+if (!function_exists('crypto_decrypt')) {
+    /**
+     * 解密
+     * @param string $str 字符串
+     * @param string $key 密钥
+     * @return string 解密后的字符串
+     */
+    function crypto_decrypt(string $str, string $key): string
+    {
+        return Crypto::decrypt($str, $key);
+    }
+}
+
+if (!function_exists('str_mask_phone')) {
+    /**
+     * 手机号脱敏
+     * @param string $phone 手机号
+     * @param int $start 开始位置
+     * @param int $end 结束位置
+     * @return string 脱敏后的手机号
+     */
+    function str_mask_phone(string $phone, int $start = 3, int $end = 4): string
+    {
+        return Str::maskPhone($phone, $start, $end);
+    }
+}
+
+if (!function_exists('str_mask_id_card')) {
+    /**
+     * 身份证号脱敏
+     * @param string $idCard 身份证号
+     * @param int $start 开始位置
+     * @param int $end 结束位置
+     * @return string 脱敏后的身份证号
+     */
+    function str_mask_id_card(string $idCard, int $start = 6, int $end = 4): string
+    {
+        return Str::maskIdCard($idCard, $start, $end);
+    }
+}
+
+if (!function_exists('arr_deep_merge')) {
+    /**
+     * 数组深度合并
+     * @param array $array1 第一个数组
+     * @param array $array2 第二个数组
+     * @return array 合并后的数组
+     */
+    function arr_deep_merge(array $array1, array $array2): array
+    {
+        return Arr::deepMerge($array1, $array2);
+    }
+}
+
+if (!function_exists('arr_multi_sort')) {
+    /**
+     * 多维数组排序
+     * @param array $array 数组
+     * @param array $keys 排序键
+     * @param array $orders 排序顺序
+     * @return array 排序后的数组
+     */
+    function arr_multi_sort(array $array, array $keys, array $orders = []): array
+    {
+        return Arr::multiSort($array, $keys, $orders);
+    }
+}
