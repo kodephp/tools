@@ -194,14 +194,140 @@ class Arr
     }
 
     /**
-     * 数组过滤
-     * @param array $array 数组
-     * @param callable $callback 回调函数
-     * @return array 过滤后的数组
+     * 数组深度合并
+     * @param array $array1 第一个数组
+     * @param array $array2 第二个数组
+     * @return array 合并后的数组
      */
-    public static function filter(array $array, callable $callback): array
+    public static function deepMerge(array $array1, array $array2): array
     {
-        return array_filter($array, $callback);
+        foreach ($array2 as $key => $value) {
+            if (is_array($value) && isset($array1[$key]) && is_array($array1[$key])) {
+                $array1[$key] = self::deepMerge($array1[$key], $value);
+            } else {
+                $array1[$key] = $value;
+            }
+        }
+        return $array1;
+    }
+
+    /**
+     * 多维数组分组
+     * @param array $array 数组
+     * @param string $key 分组键名
+     * @return array 分组后的数组
+     */
+    public static function group(array $array, string $key): array
+    {
+        $result = [];
+        foreach ($array as $item) {
+            $result[$item[$key]][] = $item;
+        }
+        return $result;
+    }
+
+    /**
+     * 多维数组统计
+     * @param array $array 数组
+     * @param string $key 统计键名
+     * @return array 统计结果
+     */
+    public static function count(array $array, string $key): array
+    {
+        $result = [];
+        foreach ($array as $item) {
+            if (isset($result[$item[$key]])) {
+                $result[$item[$key]]++;
+            } else {
+                $result[$item[$key]] = 1;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * 多维数组求和
+     * @param array $array 数组
+     * @param string $key 求和键名
+     * @return float 求和结果
+     */
+    public static function sum(array $array, string $key): float
+    {
+        $sum = 0;
+        foreach ($array as $item) {
+            $sum += $item[$key];
+        }
+        return $sum;
+    }
+
+    /**
+     * 多维数组求平均值
+     * @param array $array 数组
+     * @param string $key 求平均值键名
+     * @return float 平均值
+     */
+    public static function avg(array $array, string $key): float
+    {
+        $count = count($array);
+        if ($count == 0) {
+            return 0;
+        }
+        return self::sum($array, $key) / $count;
+    }
+
+    /**
+     * 多维数组求最大值
+     * @param array $array 数组
+     * @param string $key 求最大值键名
+     * @return float 最大值
+     */
+    public static function max(array $array, string $key): float
+    {
+        $max = PHP_INT_MIN;
+        foreach ($array as $item) {
+            if ($item[$key] > $max) {
+                $max = $item[$key];
+            }
+        }
+        return $max;
+    }
+
+    /**
+     * 多维数组求最小值
+     * @param array $array 数组
+     * @param string $key 求最小值键名
+     * @return float 最小值
+     */
+    public static function min(array $array, string $key): float
+    {
+        $min = PHP_INT_MAX;
+        foreach ($array as $item) {
+            if ($item[$key] < $min) {
+                $min = $item[$key];
+            }
+        }
+        return $min;
+    }
+
+    /**
+     * 多维数组转JSON
+     * @param array $array 数组
+     * @param int $options JSON选项
+     * @return string JSON字符串
+     */
+    public static function toJson(array $array, int $options = JSON_UNESCAPED_UNICODE): string
+    {
+        return json_encode($array, $options);
+    }
+
+    /**
+     * JSON转多维数组
+     * @param string $json JSON字符串
+     * @return array 数组
+     */
+    public static function fromJson(string $json): array
+    {
+        return json_decode($json, true);
     }
 
     /**
