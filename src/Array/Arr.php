@@ -477,4 +477,552 @@ class Arr
         }
         return $result;
     }
+
+    /**
+     * 数组切片
+     * @param array $array 数组
+     * @param int $offset 偏移量
+     * @param int|null $length 长度
+     * @return array 切片后的数组
+     */
+    public static function slice(array $array, int $offset, ?int $length = null): array
+    {
+        return array_slice($array, $offset, $length, true);
+    }
+
+    /**
+     * 数组过滤
+     * @param array $array 数组
+     * @param callable|null $callback 回调函数
+     * @return array 过滤后的数组
+     */
+    public static function filter(array $array, ?callable $callback = null): array
+    {
+        if ($callback === null) {
+            return array_filter($array, function ($value) {
+                return !empty($value);
+            });
+        }
+        return array_filter($array, $callback, ARRAY_FILTER_USE_BOTH);
+    }
+
+    /**
+     * 数组归约
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @param mixed $initial 初始值
+     * @return mixed 归约结果
+     */
+    public static function reduce(array $array, callable $callback, mixed $initial = null): mixed
+    {
+        return array_reduce($array, $callback, $initial);
+    }
+
+    /**
+     * 数组查找
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return mixed|null 查找结果
+     */
+    public static function find(array $array, callable $callback): mixed
+    {
+        if (PHP_VERSION_ID >= 80400) {
+            return array_find($array, $callback);
+        }
+        foreach ($array as $key => $value) {
+            if ($callback($value, $key)) {
+                return $value;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 数组查找键名
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return string|int|null 键名
+     */
+    public static function findKey(array $array, callable $callback): string|int|null
+    {
+        if (PHP_VERSION_ID >= 80400) {
+            return array_find_key($array, $callback);
+        }
+        foreach ($array as $key => $value) {
+            if ($callback($value, $key)) {
+                return $key;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 数组是否存在满足条件的元素
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return bool 是否存在
+     */
+    public static function some(array $array, callable $callback): bool
+    {
+        foreach ($array as $key => $value) {
+            if ($callback($value, $key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 数组是否所有元素都满足条件
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return bool 是否都满足
+     */
+    public static function every(array $array, callable $callback): bool
+    {
+        foreach ($array as $key => $value) {
+            if (!$callback($value, $key)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 数组分割
+     * @param array $array 数组
+     * @param int $size 分块大小
+     * @return array 分割后的数组
+     */
+    public static function chunk(array $array, int $size): array
+    {
+        return array_chunk($array, $size, true);
+    }
+
+    /**
+     * 数组合并
+     * @param array ...$arrays 数组列表
+     * @return array 合并后的数组
+     */
+    public static function merge(array ...$arrays): array
+    {
+        return array_merge(...$arrays);
+    }
+
+    /**
+     * 数组合并（保留键名）
+     * @param array ...$arrays 数组列表
+     * @return array 合并后的数组
+     */
+    public static function mergeRecursive(array ...$arrays): array
+    {
+        return array_merge_recursive(...$arrays);
+    }
+
+    /**
+     * 数组差集
+     * @param array $array1 第一个数组
+     * @param array $array2 第二个数组
+     * @return array 差集
+     */
+    public static function diff(array $array1, array $array2): array
+    {
+        return array_diff($array1, $array2);
+    }
+
+    /**
+     * 数组差集（带键名）
+     * @param array $array1 第一个数组
+     * @param array $array2 第二个数组
+     * @return array 差集
+     */
+    public static function diffKey(array $array1, array $array2): array
+    {
+        return array_diff_key($array1, $array2);
+    }
+
+    /**
+     * 数组交集
+     * @param array $array1 第一个数组
+     * @param array $array2 第二个数组
+     * @return array 交集
+     */
+    public static function intersect(array $array1, array $array2): array
+    {
+        return array_intersect($array1, $array2);
+    }
+
+    /**
+     * 数组交集（带键名）
+     * @param array $array1 第一个数组
+     * @param array $array2 第二个数组
+     * @return array 交集
+     */
+    public static function intersectKey(array $array1, array $array2): array
+    {
+        return array_intersect_key($array1, $array2);
+    }
+
+    /**
+     * 数组填充
+     * @param int $start 起始索引
+     * @param int $count 数量
+     * @param mixed $value 填充值
+     * @return array 填充后的数组
+     */
+    public static function fill(int $start, int $count, mixed $value): array
+    {
+        return array_fill($start, $count, $value);
+    }
+
+    /**
+     * 数组键名
+     * @param array $array 数组
+     * @return array 键名数组
+     */
+    public static function keys(array $array): array
+    {
+        return array_keys($array);
+    }
+
+    /**
+     * 数组值
+     * @param array $array 数组
+     * @return array 值数组
+     */
+    public static function values(array $array): array
+    {
+        return array_values($array);
+    }
+
+    /**
+     * 数组反转
+     * @param array $array 数组
+     * @param bool $preserveKeys 是否保留键名
+     * @return array 反转后的数组
+     */
+    public static function reverse(array $array, bool $preserveKeys = false): array
+    {
+        return array_reverse($array, $preserveKeys);
+    }
+
+    /**
+     * 数组打乱
+     * @param array $array 数组
+     * @return array 打乱后的数组
+     */
+    public static function shuffle(array $array): array
+    {
+        shuffle($array);
+        return $array;
+    }
+
+    /**
+     * 数组随机获取一个元素
+     * @param array $array 数组
+     * @return mixed 随机元素
+     */
+    public static function random(array $array): mixed
+    {
+        if (empty($array)) {
+            return null;
+        }
+        return $array[array_rand($array)];
+    }
+
+    /**
+     * 数组随机获取多个元素
+     * @param array $array 数组
+     * @param int $num 数量
+     * @return array 随机元素数组
+     */
+    public static function randomMany(array $array, int $num): array
+    {
+        if (empty($array) || $num <= 0) {
+            return [];
+        }
+        $keys = array_rand($array, min($num, count($array)));
+        if (!is_array($keys)) {
+            $keys = [$keys];
+        }
+        $result = [];
+        foreach ($keys as $key) {
+            $result[$key] = $array[$key];
+        }
+        return $result;
+    }
+
+    /**
+     * 数组第一个元素
+     * @param array $array 数组
+     * @return mixed 第一个元素
+     */
+    public static function first(array $array): mixed
+    {
+        if (empty($array)) {
+            return null;
+        }
+        if (PHP_VERSION_ID >= 80400) {
+            return array_first($array);
+        }
+        return reset($array);
+    }
+
+    /**
+     * 数组最后一个元素
+     * @param array $array 数组
+     * @return mixed 最后一个元素
+     */
+    public static function last(array $array): mixed
+    {
+        if (empty($array)) {
+            return null;
+        }
+        if (PHP_VERSION_ID >= 80400) {
+            return array_last($array);
+        }
+        return end($array);
+    }
+
+    /**
+     * 数组弹出第一个元素
+     * @param array $array 数组
+     * @return mixed 第一个元素
+     */
+    public static function shift(array &$array): mixed
+    {
+        return array_shift($array);
+    }
+
+    /**
+     * 数组弹出最后一个元素
+     * @param array $array 数组
+     * @return mixed 最后一个元素
+     */
+    public static function pop(array &$array): mixed
+    {
+        return array_pop($array);
+    }
+
+    /**
+     * 数组头部添加元素
+     * @param array $array 数组
+     * @param mixed ...$values 元素列表
+     * @return int 新数组长度
+     */
+    public static function unshift(array &$array, mixed ...$values): int
+    {
+        return array_unshift($array, ...$values);
+    }
+
+    /**
+     * 数组尾部添加元素
+     * @param array $array 数组
+     * @param mixed ...$values 元素列表
+     * @return int 新数组长度
+     */
+    public static function push(array &$array, mixed ...$values): int
+    {
+        return array_push($array, ...$values);
+    }
+
+    /**
+     * 数组删除指定元素
+     * @param array $array 数组
+     * @param mixed $value 元素值
+     * @param bool $strict 是否严格比较
+     * @return array 删除后的数组
+     */
+    public static function remove(array $array, mixed $value, bool $strict = false): array
+    {
+        $keys = array_keys($array, $value, $strict);
+        foreach ($keys as $key) {
+            unset($array[$key]);
+        }
+        return $array;
+    }
+
+    /**
+     * 数组删除指定键名
+     * @param array $array 数组
+     * @param string|int $key 键名
+     * @return array 删除后的数组
+     */
+    public static function removeKey(array $array, string|int $key): array
+    {
+        unset($array[$key]);
+        return $array;
+    }
+
+    /**
+     * 数组是否包含指定元素
+     * @param array $array 数组
+     * @param mixed $value 元素值
+     * @param bool $strict 是否严格比较
+     * @return bool 是否包含
+     */
+    public static function contains(array $array, mixed $value, bool $strict = false): bool
+    {
+        return in_array($value, $array, $strict);
+    }
+
+    /**
+     * 数组是否包含指定键名
+     * @param array $array 数组
+     * @param string|int $key 键名
+     * @return bool 是否包含
+     */
+    public static function containsKey(array $array, string|int $key): bool
+    {
+        return array_key_exists($key, $array);
+    }
+
+    /**
+     * 数组是否为空
+     * @param array $array 数组
+     * @return bool 是否为空
+     */
+    public static function isEmpty(array $array): bool
+    {
+        return empty($array);
+    }
+
+    /**
+     * 数组是否为关联数组
+     * @param array $array 数组
+     * @return bool 是否为关联数组
+     */
+    public static function isAssoc(array $array): bool
+    {
+        if (empty($array)) {
+            return false;
+        }
+        return array_keys($array) !== range(0, count($array) - 1);
+    }
+
+    /**
+     * 数组是否为索引数组
+     * @param array $array 数组
+     * @return bool 是否为索引数组
+     */
+    public static function isIndexed(array $array): bool
+    {
+        if (empty($array)) {
+            return true;
+        }
+        return array_keys($array) === range(0, count($array) - 1);
+    }
+
+    /**
+     * 数组键名转换
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return array 转换后的数组
+     */
+    public static function mapKeys(array $array, callable $callback): array
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            $newKey = $callback($key, $value);
+            $result[$newKey] = $value;
+        }
+        return $result;
+    }
+
+    /**
+     * 数组值转换
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return array 转换后的数组
+     */
+    public static function mapValues(array $array, callable $callback): array
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            $result[$key] = $callback($value, $key);
+        }
+        return $result;
+    }
+
+    /**
+     * 数组组合
+     * @param array $keys 键名数组
+     * @param array $values 值数组
+     * @return array 组合后的数组
+     */
+    public static function combine(array $keys, array $values): array
+    {
+        return array_combine($keys, $values);
+    }
+
+    /**
+     * 数组填充键名
+     * @param array $keys 键名数组
+     * @param mixed $value 填充值
+     * @return array 填充后的数组
+     */
+    public static function fillKeys(array $keys, mixed $value): array
+    {
+        return array_fill_keys($keys, $value);
+    }
+
+    /**
+     * 数组翻转
+     * @param array $array 数组
+     * @return array 翻转后的数组
+     */
+    public static function flip(array $array): array
+    {
+        return array_flip($array);
+    }
+
+    /**
+     * 数组列提取
+     * @param array $array 数组
+     * @param string $columnKey 列键名
+     * @param string|null $indexKey 索引键名
+     * @return array 提取后的数组
+     */
+    public static function column(array $array, string $columnKey, ?string $indexKey = null): array
+    {
+        return array_column($array, $columnKey, $indexKey);
+    }
+
+    /**
+     * 数组是否存在满足条件的元素
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return bool 是否存在
+     */
+    public static function any(array $array, callable $callback): bool
+    {
+        if (PHP_VERSION_ID >= 80400) {
+            return array_any($array, $callback);
+        }
+        foreach ($array as $key => $value) {
+            if ($callback($value, $key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 数组是否所有元素都满足条件
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return bool 是否都满足
+     */
+    public static function all(array $array, callable $callback): bool
+    {
+        if (PHP_VERSION_ID >= 80400) {
+            return array_all($array, $callback);
+        }
+        foreach ($array as $key => $value) {
+            if (!$callback($value, $key)) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

@@ -210,7 +210,7 @@ if (!function_exists('geo_distance')) {
      * @param float $lon1 第一个点的经度
      * @param float $lat2 第二个点的纬度
      * @param float $lon2 第二个点的经度
-     * @param string $unit 计量单位（km, mi, m）
+     * @param string $unit 单位（km:公里, mi:英里, m:米）
      * @return float 两点之间的距离
      */
     function geo_distance(float $lat1, float $lon1, float $lat2, float $lon2, string $unit = 'km'): float
@@ -244,12 +244,417 @@ if (!function_exists('ip_is_valid')) {
 
 if (!function_exists('ip_is_private')) {
     /**
-     * 检查IP地址是否为私有/内部IP
+     * 检查IP地址是否为私有/内部地址
      * @param string $ip 要检查的IP地址
      * @return bool 如果是私有IP则返回true
      */
     function ip_is_private(string $ip): bool
     {
         return Ip::isPrivate($ip);
+    }
+}
+
+if (!function_exists('arr_first')) {
+    /**
+     * 获取数组第一个元素
+     * @param array $array 数组
+     * @return mixed 第一个元素
+     */
+    function arr_first(array $array): mixed
+    {
+        return Arr::first($array);
+    }
+}
+
+if (!function_exists('arr_last')) {
+    /**
+     * 获取数组最后一个元素
+     * @param array $array 数组
+     * @return mixed 最后一个元素
+     */
+    function arr_last(array $array): mixed
+    {
+        return Arr::last($array);
+    }
+}
+
+if (!function_exists('arr_find')) {
+    /**
+     * 数组查找
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return mixed|null 查找结果
+     */
+    function arr_find(array $array, callable $callback): mixed
+    {
+        return Arr::find($array, $callback);
+    }
+}
+
+if (!function_exists('arr_find_key')) {
+    /**
+     * 数组查找键名
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return string|int|null 键名
+     */
+    function arr_find_key(array $array, callable $callback): string|int|null
+    {
+        return Arr::findKey($array, $callback);
+    }
+}
+
+if (!function_exists('arr_any')) {
+    /**
+     * 数组是否存在满足条件的元素
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return bool 是否存在
+     */
+    function arr_any(array $array, callable $callback): bool
+    {
+        return Arr::any($array, $callback);
+    }
+}
+
+if (!function_exists('arr_all')) {
+    /**
+     * 数组是否所有元素都满足条件
+     * @param array $array 数组
+     * @param callable $callback 回调函数
+     * @return bool 是否都满足
+     */
+    function arr_all(array $array, callable $callback): bool
+    {
+        return Arr::all($array, $callback);
+    }
+}
+
+if (!function_exists('str_truncate')) {
+    /**
+     * 字符串截断
+     * @param string $str 字符串
+     * @param int $length 截断长度
+     * @param string $suffix 后缀
+     * @return string 截断后的字符串
+     */
+    function str_truncate(string $str, int $length, string $suffix = '...'): string
+    {
+        return Str::truncate($str, $length, $suffix);
+    }
+}
+
+if (!function_exists('str_limit')) {
+    /**
+     * 字符串限制
+     * @param string $str 字符串
+     * @param int $limit 限制长度
+     * @param string $suffix 后缀
+     * @return string 限制后的字符串
+     */
+    function str_limit(string $str, int $limit, string $suffix = '...'): string
+    {
+        return Str::limit($str, $limit, $suffix);
+    }
+}
+
+if (!function_exists('str_snake')) {
+    /**
+     * 驼峰转下划线
+     * @param string $str 字符串
+     * @param string $separator 分隔符
+     * @return string 下划线命名
+     */
+    function str_snake(string $str, string $separator = '_'): string
+    {
+        return Str::snake($str, $separator);
+    }
+}
+
+if (!function_exists('str_contains')) {
+    /**
+     * 字符串是否包含
+     * @param string $str 字符串
+     * @param string $needle 查找字符串
+     * @return bool 是否包含
+     */
+    function str_contains(string $str, string $needle): bool
+    {
+        return Str::contains($str, $needle);
+    }
+}
+
+if (!function_exists('str_starts_with')) {
+    /**
+     * 字符串是否以开头
+     * @param string $str 字符串
+     * @param string $prefix 前缀
+     * @return bool 是否以开头
+     */
+    function str_starts_with(string $str, string $prefix): bool
+    {
+        return Str::startsWith($str, $prefix);
+    }
+}
+
+if (!function_exists('str_ends_with')) {
+    /**
+     * 字符串是否以结尾
+     * @param string $str 字符串
+     * @param string $suffix 后缀
+     * @return bool 是否以结尾
+     */
+    function str_ends_with(string $str, string $suffix): bool
+    {
+        return Str::endsWith($str, $suffix);
+    }
+}
+
+if (!function_exists('str_replace_array')) {
+    /**
+     * 字符串替换多个
+     * @param string $str 字符串
+     * @param array $replace 替换数组
+     * @return string 替换后的字符串
+     */
+    function str_replace_array(string $str, array $replace): string
+    {
+        return Str::replaceArray($str, $replace);
+    }
+}
+
+if (!function_exists('str_remove')) {
+    /**
+     * 字符串删除
+     * @param string $str 字符串
+     * @param string $search 删除字符串
+     * @return string 删除后的字符串
+     */
+    function str_remove(string $str, string $search): string
+    {
+        return Str::remove($str, $search);
+    }
+}
+
+if (!function_exists('str_remove_array')) {
+    /**
+     * 字符串删除多个
+     * @param string $str 字符串
+     * @param array $search 删除字符串数组
+     * @return string 删除后的字符串
+     */
+    function str_remove_array(string $str, array $search): string
+    {
+        return Str::removeArray($str, $search);
+    }
+}
+
+if (!function_exists('str_join')) {
+    /**
+     * 字符串连接
+     * @param array $array 数组
+     * @param string $separator 分隔符
+     * @return string 连接后的字符串
+     */
+    function str_join(array $array, string $separator = ''): string
+    {
+        return Str::join($array, $separator);
+    }
+}
+
+if (!function_exists('str_unique')) {
+    /**
+     * 字符串去重
+     * @param string $str 字符串
+     * @return string 去重后的字符串
+     */
+    function str_unique(string $str): string
+    {
+        return Str::unique($str);
+    }
+}
+
+if (!function_exists('str_shuffle')) {
+    /**
+     * 字符串打乱
+     * @param string $str 字符串
+     * @return string 打乱后的字符串
+     */
+    function str_shuffle(string $str): string
+    {
+        return Str::shuffle($str);
+    }
+}
+
+if (!function_exists('str_substr')) {
+    /**
+     * 字符串截取
+     * @param string $str 字符串
+     * @param int $start 开始位置
+     * @param int|null $length 截取长度
+     * @return string 截取后的字符串
+     */
+    function str_substr(string $str, int $start, ?int $length = null): string
+    {
+        return Str::substr($str, $start, $length);
+    }
+}
+
+if (!function_exists('str_mb_substr')) {
+    /**
+     * 字符串截取多字节
+     * @param string $str 字符串
+     * @param int $start 开始位置
+     * @param int|null $length 截取长度
+     * @return string 截取后的字符串
+     */
+    function str_mb_substr(string $str, int $start, ?int $length = null): string
+    {
+        return Str::mbSubstr($str, $start, $length);
+    }
+}
+
+if (!function_exists('str_length')) {
+    /**
+     * 字符串长度
+     * @param string $str 字符串
+     * @return int 长度
+     */
+    function str_length(string $str): int
+    {
+        return Str::length($str);
+    }
+}
+
+if (!function_exists('str_mb_length')) {
+    /**
+     * 字符串多字节长度
+     * @param string $str 字符串
+     * @return int 长度
+     */
+    function str_mb_length(string $str): int
+    {
+        return Str::mbLength($str);
+    }
+}
+
+if (!function_exists('str_to_binary')) {
+    /**
+     * 字符串转二进制
+     * @param string $str 字符串
+     * @return string 二进制字符串
+     */
+    function str_to_binary(string $str): string
+    {
+        return Str::toBinary($str);
+    }
+}
+
+if (!function_exists('str_from_binary')) {
+    /**
+     * 二进制转字符串
+     * @param string $binary 二进制字符串
+     * @return string 字符串
+     */
+    function str_from_binary(string $binary): string
+    {
+        return Str::fromBinary($binary);
+    }
+}
+
+if (!function_exists('str_to_hex')) {
+    /**
+     * 字符串转十六进制
+     * @param string $str 字符串
+     * @return string 十六进制字符串
+     */
+    function str_to_hex(string $str): string
+    {
+        return Str::toHex($str);
+    }
+}
+
+if (!function_exists('str_from_hex')) {
+    /**
+     * 十六进制转字符串
+     * @param string $hex 十六进制字符串
+     * @return string 字符串
+     */
+    function str_from_hex(string $hex): string
+    {
+        return Str::fromHex($hex);
+    }
+}
+
+if (!function_exists('str_to_base64')) {
+    /**
+     * 字符串转Base64
+     * @param string $str 字符串
+     * @return string Base64字符串
+     */
+    function str_to_base64(string $str): string
+    {
+        return Str::toBase64($str);
+    }
+}
+
+if (!function_exists('str_from_base64')) {
+    /**
+     * Base64转字符串
+     * @param string $base64 Base64字符串
+     * @return string 字符串
+     */
+    function str_from_base64(string $base64): string
+    {
+        return Str::fromBase64($base64);
+    }
+}
+
+if (!function_exists('str_to_url_encode')) {
+    /**
+     * 字符串转URL编码
+     * @param string $str 字符串
+     * @return string URL编码字符串
+     */
+    function str_to_url_encode(string $str): string
+    {
+        return Str::toUrlEncode($str);
+    }
+}
+
+if (!function_exists('str_from_url_decode')) {
+    /**
+     * URL编码转字符串
+     * @param string $urlEncoded URL编码字符串
+     * @return string 字符串
+     */
+    function str_from_url_decode(string $urlEncoded): string
+    {
+        return Str::fromUrlDecode($urlEncoded);
+    }
+}
+
+if (!function_exists('str_compress')) {
+    /**
+     * 字符串压缩
+     * @param string $str 字符串
+     * @param int $level 压缩级别（0-9）
+     * @return string 压缩后的字符串
+     */
+    function str_compress(string $str, int $level = -1): string
+    {
+        return Str::compress($str, $level);
+    }
+}
+
+if (!function_exists('str_decompress')) {
+    /**
+     * 字符串解压
+     * @param string $compressed 压缩后的字符串
+     * @return string 解压后的字符串
+     */
+    function str_decompress(string $compressed): string
+    {
+        return Str::decompress($compressed);
     }
 }

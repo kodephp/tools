@@ -1066,4 +1066,341 @@ class Str
     {
         return htmlspecialchars_decode($str, ENT_QUOTES);
     }
+
+    /**
+     * 字符串截断
+     * @param string $str 字符串
+     * @param int $length 截断长度
+     * @param string $suffix 后缀
+     * @return string 截断后的字符串
+     */
+    public static function truncate(string $str, int $length, string $suffix = '...'): string
+    {
+        if (mb_strlen($str) <= $length) {
+            return $str;
+        }
+        return mb_substr($str, 0, $length) . $suffix;
+    }
+
+    /**
+     * 字符串限制
+     * @param string $str 字符串
+     * @param int $limit 限制长度
+     * @param string $end 结尾字符
+     * @return string 限制后的字符串
+     */
+    public static function limit(string $str, int $limit, string $end = '...'): string
+    {
+        if (mb_strwidth($str) <= $limit) {
+            return $str;
+        }
+        return mb_strimwidth($str, 0, $limit, $end);
+    }
+
+    /**
+     * 字符串词数统计
+     * @param string $str 字符串
+     * @return int 词数
+     */
+    public static function wordCount(string $str): int
+    {
+        return str_word_count($str);
+    }
+
+    /**
+     * 字符串首字母大写
+     * @param string $str 字符串
+     * @return string 首字母大写的字符串
+     */
+    public static function ucfirst(string $str): string
+    {
+        return ucfirst($str);
+    }
+
+    /**
+     * 字符串首字母小写
+     * @param string $str 字符串
+     * @return string 首字母小写的字符串
+     */
+    public static function lcfirst(string $str): string
+    {
+        return lcfirst($str);
+    }
+
+    /**
+     * 字符串标题格式
+     * @param string $str 字符串
+     * @return string 标题格式的字符串
+     */
+    public static function title(string $str): string
+    {
+        return mb_convert_case($str, MB_CASE_TITLE, 'UTF-8');
+    }
+
+    /**
+     * 字符串是否包含
+     * @param string $str 字符串
+     * @param string $needle 查找字符串
+     * @return bool 是否包含
+     */
+    public static function contains(string $str, string $needle): bool
+    {
+        return str_contains($str, $needle);
+    }
+
+    /**
+     * 字符串是否以开头
+     * @param string $str 字符串
+     * @param string $prefix 前缀
+     * @return bool 是否以开头
+     */
+    public static function startsWith(string $str, string $prefix): bool
+    {
+        return str_starts_with($str, $prefix);
+    }
+
+    /**
+     * 字符串是否以结尾
+     * @param string $str 字符串
+     * @param string $suffix 后缀
+     * @return bool 是否以结尾
+     */
+    public static function endsWith(string $str, string $suffix): bool
+    {
+        return str_ends_with($str, $suffix);
+    }
+
+    /**
+     * 字符串替换
+     * @param string $str 字符串
+     * @param string $search 查找字符串
+     * @param string $replace 替换字符串
+     * @return string 替换后的字符串
+     */
+    public static function replace(string $str, string $search, string $replace): string
+    {
+        return str_replace($search, $replace, $str);
+    }
+
+    /**
+     * 字符串替换多个
+     * @param string $str 字符串
+     * @param array $replace 替换数组
+     * @return string 替换后的字符串
+     */
+    public static function replaceArray(string $str, array $replace): string
+    {
+        return str_replace(array_keys($replace), array_values($replace), $str);
+    }
+
+    /**
+     * 字符串删除
+     * @param string $str 字符串
+     * @param string $search 删除字符串
+     * @return string 删除后的字符串
+     */
+    public static function remove(string $str, string $search): string
+    {
+        return self::replace($str, $search, '');
+    }
+
+    /**
+     * 字符串删除多个
+     * @param string $str 字符串
+     * @param array $search 删除字符串数组
+     * @return string 删除后的字符串
+     */
+    public static function removeArray(string $str, array $search): string
+    {
+        return str_replace($search, '', $str);
+    }
+
+    /**
+     * 字符串连接
+     * @param array $array 数组
+     * @param string $separator 分隔符
+     * @return string 连接后的字符串
+     */
+    public static function join(array $array, string $separator = ''): string
+    {
+        return implode($separator, $array);
+    }
+
+    /**
+     * 字符串去重
+     * @param string $str 字符串
+     * @return string 去重后的字符串
+     */
+    public static function unique(string $str): string
+    {
+        $chars = mb_str_split($str);
+        $unique = array_unique($chars);
+        return implode('', $unique);
+    }
+
+    /**
+     * 字符串打乱
+     * @param string $str 字符串
+     * @return string 打乱后的字符串
+     */
+    public static function shuffle(string $str): string
+    {
+        $chars = mb_str_split($str);
+        shuffle($chars);
+        return implode('', $chars);
+    }
+
+    /**
+     * 字符串截取
+     * @param string $str 字符串
+     * @param int $start 开始位置
+     * @param int|null $length 截取长度
+     * @return string 截取后的字符串
+     */
+    public static function substr(string $str, int $start, ?int $length = null): string
+    {
+        return substr($str, $start, $length);
+    }
+
+    /**
+     * 字符串截取多字节
+     * @param string $str 字符串
+     * @param int $start 开始位置
+     * @param int|null $length 截取长度
+     * @return string 截取后的字符串
+     */
+    public static function mbSubstr(string $str, int $start, ?int $length = null): string
+    {
+        return mb_substr($str, $start, $length);
+    }
+
+    /**
+     * 字符串长度
+     * @param string $str 字符串
+     * @return int 长度
+     */
+    public static function length(string $str): int
+    {
+        return strlen($str);
+    }
+
+    /**
+     * 字符串多字节长度
+     * @param string $str 字符串
+     * @return int 长度
+     */
+    public static function mbLength(string $str): int
+    {
+        return mb_strlen($str);
+    }
+
+    /**
+     * 字符串转二进制
+     * @param string $str 字符串
+     * @return string 二进制字符串
+     */
+    public static function toBinary(string $str): string
+    {
+        $result = '';
+        for ($i = 0; $i < strlen($str); $i++) {
+            $result .= sprintf('%08b', ord($str[$i]));
+        }
+        return $result;
+    }
+
+    /**
+     * 二进制转字符串
+     * @param string $binary 二进制字符串
+     * @return string 字符串
+     */
+    public static function fromBinary(string $binary): string
+    {
+        $result = '';
+        $chunks = str_split($binary, 8);
+        foreach ($chunks as $chunk) {
+            $result .= chr(bindec($chunk));
+        }
+        return $result;
+    }
+
+    /**
+     * 字符串转十六进制
+     * @param string $str 字符串
+     * @return string 十六进制字符串
+     */
+    public static function toHex(string $str): string
+    {
+        return bin2hex($str);
+    }
+
+    /**
+     * 十六进制转字符串
+     * @param string $hex 十六进制字符串
+     * @return string 字符串
+     */
+    public static function fromHex(string $hex): string
+    {
+        return hex2bin($hex);
+    }
+
+    /**
+     * 字符串转Base64
+     * @param string $str 字符串
+     * @return string Base64字符串
+     */
+    public static function toBase64(string $str): string
+    {
+        return base64_encode($str);
+    }
+
+    /**
+     * Base64转字符串
+     * @param string $base64 Base64字符串
+     * @return string 字符串
+     */
+    public static function fromBase64(string $base64): string
+    {
+        return base64_decode($base64);
+    }
+
+    /**
+     * 字符串转URL编码
+     * @param string $str 字符串
+     * @return string URL编码字符串
+     */
+    public static function toUrlEncode(string $str): string
+    {
+        return urlencode($str);
+    }
+
+    /**
+     * URL编码转字符串
+     * @param string $urlEncoded URL编码字符串
+     * @return string 字符串
+     */
+    public static function fromUrlDecode(string $urlEncoded): string
+    {
+        return urldecode($urlEncoded);
+    }
+
+    /**
+     * 字符串压缩
+     * @param string $str 字符串
+     * @param int $level 压缩级别（0-9）
+     * @return string 压缩后的字符串
+     */
+    public static function compress(string $str, int $level = -1): string
+    {
+        return gzcompress($str, $level);
+    }
+
+    /**
+     * 字符串解压
+     * @param string $compressed 压缩后的字符串
+     * @return string 解压后的字符串
+     */
+    public static function decompress(string $compressed): string
+    {
+        return gzuncompress($compressed);
+    }
 }

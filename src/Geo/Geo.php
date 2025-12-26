@@ -9,7 +9,7 @@ namespace Kode\Geo;
 class Geo
 {
     /**
-     * 地球半径（公里，WGS84椭球体）
+     * 地球半径（公里，WGS84椭球）
      */
     private const EARTH_RADIUS_KM = 6378.137;
     
@@ -29,7 +29,7 @@ class Geo
      * @param float $lon1 第一个点的经度
      * @param float $lat2 第二个点的纬度
      * @param float $lon2 第二个点的经度
-     * @param string $unit 计量单位（km, mi, m）
+     * @param string $unit 单位（km:公里, mi:英里, m:米）
      * @return float 两点之间的距离
      */
     public static function distance(float $lat1, float $lon1, float $lat2, float $lon2, string $unit = 'km'): float
@@ -42,7 +42,7 @@ class Geo
              sin($dLon / 2) * sin($dLon / 2);
              
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        
+             
         return match($unit) {
             'mi' => $c * self::EARTH_RADIUS_MI,
             'm' => $c * self::EARTH_RADIUS_M,
@@ -87,7 +87,7 @@ class Geo
      * @param float $lon1 第一个点的经度
      * @param float $lat2 第二个点的纬度
      * @param float $lon2 第二个点的经度
-     * @return array 中点坐标 [lat, lon]
+     * @return array 中点坐标 [纬度, 经度]
      */
     public static function midpoint(float $lat1, float $lon1, float $lat2, float $lon2): array
     {
@@ -106,12 +106,12 @@ class Geo
     }
 
     /**
-     * Calculate bearing between two coordinates
-     * @param float $lat1 Latitude of first point
-     * @param float $lon1 Longitude of first point
-     * @param float $lat2 Latitude of second point
-     * @param float $lon2 Longitude of second point
-     * @return float Bearing in degrees (0-360)
+     * 计算两个坐标之间的方位角
+     * @param float $lat1 第一个点的纬度
+     * @param float $lon1 第一个点的经度
+     * @param float $lat2 第二个点的纬度
+     * @param float $lon2 第二个点的经度
+     * @return float 方位角（0-360度）
      */
     public static function bearing(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
@@ -133,10 +133,10 @@ class Geo
     }
 
     /**
-     * Convert decimal degrees to degrees, minutes, seconds (DMS)
-     * @param float $decimal Decimal degrees
-     * @param bool $isLatitude True if latitude, false if longitude
-     * @return array DMS components [degrees, minutes, seconds, direction]
+     * 将十进制度数转换为度分秒（DMS）
+     * @param float $decimal 十进制度数
+     * @param bool $isLatitude 是否为纬度
+     * @return array DMS组件 [度, 分, 秒, 方向]
      */
     public static function toDMS(float $decimal, bool $isLatitude): array
     {
@@ -156,12 +156,12 @@ class Geo
     }
 
     /**
-     * Convert degrees, minutes, seconds (DMS) to decimal degrees
-     * @param int $degrees Degrees
-     * @param int $minutes Minutes
-     * @param float $seconds Seconds
-     * @param string $direction Direction (N, S, E, W)
-     * @return float Decimal degrees
+     * 将度分秒（DMS）转换为十进制度数
+     * @param int $degrees 度
+     * @param int $minutes 分
+     * @param float $seconds 秒
+     * @param string $direction 方向（N, S, E, W）
+     * @return float 十进制度数
      */
     public static function toDecimal(int $degrees, int $minutes, float $seconds, string $direction): float
     {

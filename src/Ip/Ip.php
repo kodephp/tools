@@ -4,7 +4,7 @@ namespace Kode\Ip;
 
 /**
  * IP地址工具类
- * 提供IP地址检索、验证和操作功能
+ * 提供IP地址获取、验证和操作功能
  */
 class Ip
 {
@@ -16,7 +16,7 @@ class Ip
     {
         $ip = null;
         
-        // 首先检查常见的代理头
+        // 先检查常见的代理头
         $headers = [
             'HTTP_X_FORWARDED_FOR',
             'HTTP_X_REAL_IP',
@@ -58,9 +58,9 @@ class Ip
     }
 
     /**
-     * Check if IP address is private/internal
-     * @param string $ip IP address to check
-     * @return bool True if private IP
+     * 检查IP地址是否为私有/内部地址
+     * @param string $ip 要检查的IP地址
+     * @return bool 如果是私有IP则返回true
      */
     public static function isPrivate(string $ip): bool
     {
@@ -73,7 +73,7 @@ class Ip
             return false;
         }
         
-        // Check private IP ranges
+        // 检查私有IP范围
         $privateRanges = [
             ['start' => ip2long('10.0.0.0'), 'end' => ip2long('10.255.255.255')],
             ['start' => ip2long('172.16.0.0'), 'end' => ip2long('172.31.255.255')],
@@ -92,9 +92,9 @@ class Ip
     }
 
     /**
-     * Get IP address version
-     * @param string $ip IP address
-     * @return int|null 4, 6, or null if invalid
+     * 获取IP地址版本
+     * @param string $ip IP地址
+     * @return int|null 4, 6, 如果无效则返回null
      */
     public static function getVersion(string $ip): ?int
     {
@@ -110,9 +110,9 @@ class Ip
     }
 
     /**
-     * Convert IP address to long integer
-     * @param string $ip IP address
-     * @return int|false Long integer or false if invalid
+     * 将IP地址转换为长整数
+     * @param string $ip IP地址
+     * @return int|false 长整数，如果无效则返回false
      */
     public static function toLong(string $ip): int|false
     {
@@ -120,9 +120,9 @@ class Ip
     }
 
     /**
-     * Convert long integer to IP address
-     * @param int $long Long integer
-     * @return string|false IP address or false if invalid
+     * 将长整数转换为IP地址
+     * @param int $long 长整数
+     * @return string|false IP地址，如果无效则返回false
      */
     public static function fromLong(int $long): string|false
     {
@@ -130,10 +130,10 @@ class Ip
     }
 
     /**
-     * Get IP address location information (requires external API)
-     * @param string $ip IP address
-     * @param string $apiKey Optional API key for location services
-     * @return array|null Location information or null if not available
+     * 获取IP地址位置信息（需要外部API）
+     * @param string $ip IP地址
+     * @param string $apiKey 可选的位置服务API密钥
+     * @return array|null 位置信息，如果不可用则返回null
      */
     public static function getLocation(string $ip, ?string $apiKey = null): ?array
     {
@@ -141,7 +141,7 @@ class Ip
             return null;
         }
         
-        // Example using ip-api.com (free for non-commercial use)
+        // 使用ip-api.com示例（非商业用途免费）
         $url = "http://ip-api.com/json/{$ip}";
         
         $context = stream_context_create([
@@ -178,10 +178,10 @@ class Ip
     }
 
     /**
-     * Check if IP address is from a specific country
-     * @param string $ip IP address
-     * @param string $countryCode 2-letter country code
-     * @return bool True if IP is from specified country
+     * 检查IP地址是否来自特定国家
+     * @param string $ip IP地址
+     * @param string $countryCode 两位国家代码
+     * @return bool 如果IP来自指定国家则返回true
      */
     public static function isFromCountry(string $ip, string $countryCode): bool
     {
@@ -194,9 +194,9 @@ class Ip
     }
 
     /**
-     * Get IP address type (public/private/loopback)
-     * @param string $ip IP address
-     * @return string|null Type of IP address
+     * 获取IP地址类型（公共/私有/回环）
+     * @param string $ip IP地址
+     * @return string|null IP地址类型
      */
     public static function getType(string $ip): ?string
     {
