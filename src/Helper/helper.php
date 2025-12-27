@@ -6,6 +6,12 @@ use Kode\Time\Time;
 use Kode\Crypto\Crypto;
 use Kode\Geo\Geo;
 use Kode\Ip\Ip;
+use Kode\Curl\Curl;
+use Kode\Curl\Response;
+use Kode\Qrcode\Qr;
+use Endroid\QrCode\Color\Color as QrColor;
+use Endroid\QrCode\Logo\Logo;
+use Endroid\QrCode\Label\Label;
 
 if (!function_exists('arr_get')) {
     /**
@@ -656,5 +662,295 @@ if (!function_exists('str_decompress')) {
     function str_decompress(string $compressed): string
     {
         return Str::decompress($compressed);
+    }
+}
+
+if (!function_exists('curl_get')) {
+    /**
+     * 发送GET请求
+     * @param string $url 请求URL
+     * @param array $query 查询参数
+     * @param array $options 请求选项
+     * @return Response 响应对象
+     */
+    function curl_get(string $url, array $query = [], array $options = []): Response
+    {
+        return Curl::get($url, $query)->curlOptions($options)->send();
+    }
+}
+
+if (!function_exists('curl_post')) {
+    /**
+     * 发送POST请求
+     * @param string $url 请求URL
+     * @param mixed $data 请求数据
+     * @param array $options 请求选项
+     * @return Response 响应对象
+     */
+    function curl_post(string $url, mixed $data = [], array $options = []): Response
+    {
+        return Curl::post($url, $data)->curlOptions($options)->send();
+    }
+}
+
+if (!function_exists('curl_put')) {
+    /**
+     * 发送PUT请求
+     * @param string $url 请求URL
+     * @param mixed $data 请求数据
+     * @param array $options 请求选项
+     * @return Response 响应对象
+     */
+    function curl_put(string $url, mixed $data = [], array $options = []): Response
+    {
+        return Curl::put($url, $data)->curlOptions($options)->send();
+    }
+}
+
+if (!function_exists('curl_patch')) {
+    /**
+     * 发送PATCH请求
+     * @param string $url 请求URL
+     * @param mixed $data 请求数据
+     * @param array $options 请求选项
+     * @return Response 响应对象
+     */
+    function curl_patch(string $url, mixed $data = [], array $options = []): Response
+    {
+        return Curl::patch($url, $data)->curlOptions($options)->send();
+    }
+}
+
+if (!function_exists('curl_delete')) {
+    /**
+     * 发送DELETE请求
+     * @param string $url 请求URL
+     * @param array $query 查询参数
+     * @param array $options 请求选项
+     * @return Response 响应对象
+     */
+    function curl_delete(string $url, array $query = [], array $options = []): Response
+    {
+        return Curl::delete($url)->query($query)->curlOptions($options)->send();
+    }
+}
+
+if (!function_exists('curl_request')) {
+    /**
+     * 发送HTTP请求
+     * @param string $method HTTP方法
+     * @param string $url 请求URL
+     * @param mixed $data 请求数据
+     * @param array $options 请求选项
+     * @return Response 响应对象
+     */
+    function curl_request(string $method, string $url, mixed $data = null, array $options = []): Response
+    {
+        $curl = (new Curl($url))->method($method);
+        if ($data !== null) {
+            $curl->body($data);
+        }
+        return $curl->curlOptions($options)->send();
+    }
+}
+
+if (!function_exists('curl_pool')) {
+    /**
+     * 并发请求
+     * @param array $requests 请求配置数组
+     * @return array 响应对象数组
+     */
+    function curl_pool(array $requests): array
+    {
+        return Curl::pool($requests);
+    }
+}
+
+if (!function_exists('qr_create')) {
+    /**
+     * 创建二维码
+     * @param string $text 二维码内容
+     * @param int $size 大小
+     * @param int|null $margin 边距
+     * @return Qr 二维码实例
+     */
+    function qr_create(string $text, int $size = 300, ?int $margin = null): Qr
+    {
+        $qr = Qr::create($text)->size($size);
+        if ($margin !== null) {
+            $qr->margin($margin);
+        }
+        return $qr;
+    }
+}
+
+if (!function_exists('qr_text')) {
+    /**
+     * 创建文本二维码
+     * @param string $text 文本内容
+     * @param int $size 大小
+     * @param int|null $margin 边距
+     * @param string $foreground 前景色hex
+     * @param string $background 背景色hex
+     * @return Qr 二维码实例
+     */
+    function qr_text(string $text, int $size = 300, ?int $margin = null, string $foreground = '#000000', string $background = '#FFFFFF'): Qr
+    {
+        $qr = Qr::create($text)->size($size);
+        if ($margin !== null) {
+            $qr->margin($margin);
+        }
+        $fgRgb = qr_hex_to_rgb($foreground);
+        $bgRgb = qr_hex_to_rgb($background);
+        $qr->foregroundColor($fgRgb[0], $fgRgb[1], $fgRgb[2])
+           ->backgroundColor($bgRgb[0], $bgRgb[1], $bgRgb[2]);
+        return $qr;
+    }
+}
+
+if (!function_exists('qr_url')) {
+    /**
+     * 创建URL二维码
+     * @param string $url URL地址
+     * @param int $size 大小
+     * @param int|null $margin 边距
+     * @return Qr 二维码实例
+     */
+    function qr_url(string $url, int $size = 300, ?int $margin = null): Qr
+    {
+        $qr = Qr::create($url)->size($size);
+        if ($margin !== null) {
+            $qr->margin($margin);
+        }
+        return $qr;
+    }
+}
+
+if (!function_exists('qr_wifi')) {
+    /**
+     * 创建WiFi二维码
+     * @param string $ssid WiFi名称
+     * @param string $password WiFi密码
+     * @param string $encryption 加密方式(wpa, wep, nopass)
+     * @param bool $hidden 是否隐藏网络
+     * @param int $size 大小
+     * @return Qr 二维码实例
+     */
+    function qr_wifi(string $ssid, string $password, string $encryption = 'wpa', bool $hidden = false, int $size = 300): Qr
+    {
+        return Qr::wifi($ssid, $password, $encryption, $hidden)->size($size);
+    }
+}
+
+if (!function_exists('qr_email')) {
+    /**
+     * 创建邮件二维码
+     * @param string $email 邮箱地址
+     * @param string|null $subject 主题
+     * @param string|null $body 内容
+     * @param int $size 大小
+     * @return Qr 二维码实例
+     */
+    function qr_email(string $email, ?string $subject = null, ?string $body = null, int $size = 300): Qr
+    {
+        $qr = Qr::email($email, $subject, $body);
+        if ($size !== 300) {
+            $qr->size($size);
+        }
+        return $qr;
+    }
+}
+
+if (!function_exists('qr_phone')) {
+    /**
+     * 创建电话二维码
+     * @param string $phone 电话号码
+     * @param int $size 大小
+     * @return Qr 二维码实例
+     */
+    function qr_phone(string $phone, int $size = 300): Qr
+    {
+        return Qr::phone($phone)->size($size);
+    }
+}
+
+if (!function_exists('qr_sms')) {
+    /**
+     * 创建短信二维码
+     * @param string $phone 电话号码
+     * @param string|null $body 短信内容
+     * @param int $size 大小
+     * @return Qr 二维码实例
+     */
+    function qr_sms(string $phone, ?string $body = null, int $size = 300): Qr
+    {
+        $qr = Qr::sms($phone, $body);
+        if ($size !== 300) {
+            $qr->size($size);
+        }
+        return $qr;
+    }
+}
+
+if (!function_exists('qr_vcard')) {
+    /**
+     * 创建名片二维码
+     * @param array $info 联系人信息 (firstName, lastName, phone, email, org, title, url, address)
+     * @param int $size 大小
+     * @return Qr 二维码实例
+     */
+    function qr_vcard(array $info, int $size = 300): Qr
+    {
+        $firstName = $info['firstName'] ?? '';
+        $lastName = $info['lastName'] ?? '';
+        return Qr::vcard($info, $firstName, $lastName)->size($size);
+    }
+}
+
+if (!function_exists('qr_geo')) {
+    /**
+     * 创建位置二维码
+     * @param float $lat 纬度
+     * @param float $lon 经度
+     * @param int $size 大小
+     * @return Qr 二维码实例
+     */
+    function qr_geo(float $lat, float $lon, int $size = 300): Qr
+    {
+        return Qr::geo($lat, $lon)->size($size);
+    }
+}
+
+if (!function_exists('qr_color')) {
+    /**
+     * 创建颜色实例
+     * @param int $red 红色
+     * @param int $green 绿色
+     * @param int $blue 蓝色
+     * @return QrColor 颜色实例
+     */
+    function qr_color(int $red, int $green, int $blue): QrColor
+    {
+        return new QrColor($red, $green, $blue);
+    }
+}
+
+if (!function_exists('qr_hex_to_rgb')) {
+    /**
+     * HEX颜色转RGB
+     * @param string $hex HEX颜色值
+     * @return array RGB数组
+     */
+    function qr_hex_to_rgb(string $hex): array
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        return [
+            (int) hexdec(substr($hex, 0, 2)),
+            (int) hexdec(substr($hex, 2, 2)),
+            (int) hexdec(substr($hex, 4, 2)),
+        ];
     }
 }

@@ -15,6 +15,7 @@ class Message
     private static array $globalFieldMap = [];
     private static ?CodeMap $staticCodeMap = null;
     private static bool $codeMapInitialized = false;
+    private static ?Message $staticInstance = null;
     
     public function __construct(int $code = 200, string $msg = '', mixed $data = null, ?string $customCodeFile = null)
     {
@@ -91,8 +92,6 @@ class Message
         $this->data = $data;
         return $this;
     }
-    
-
     
     /**
      * 扩展自定义字段
@@ -299,21 +298,27 @@ class Message
             throw new \BadMethodCallException("Invalid method name: {$name}");
         }
         
-        static $instances = [];
-        $key = spl_object_id(new self());
-        if (!isset($instances[$key])) {
-            $instances[$key] = new self();
+        // 复用静态实例以支持链式调用
+        if (self::$staticInstance === null) {
+            self::$staticInstance = new self();
         }
-        $instance = $instances[$key];
+        $instance = self::$staticInstance;
+        
+        // 重置消息体状态（除了codeMap）
+        $instance->code = 200;
+        $instance->msg = 'success';
+        $instance->data = null;
+        $instance->ext = [];
+        $instance->fieldMap = [];
         
         switch ($name) {
             case 'result':
                 $result = $instance->result($arguments[0] ?? []);
-                unset($instances[$key]);
+                self::$staticInstance = null;
                 return $result;
             case 'json':
                 $result = $instance->json($arguments[0] ?? []);
-                unset($instances[$key]);
+                self::$staticInstance = null;
                 return $result;
             default:
                 return $instance->$name(...$arguments);

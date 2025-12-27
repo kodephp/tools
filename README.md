@@ -31,6 +31,19 @@
 │   │   ├── Geo.php       // 地理位置主类
 │   ├── Ip/               // IP地址处理核心
 │   │   ├── Ip.php        // IP地址处理主类
+│   ├── Curl/             // HTTP请求核心
+│   │   ├── Curl.php      // HTTP请求主类
+│   │   ├── Response.php  // 响应处理类
+│   │   ├── Exception/    // 异常类
+│   │   │   ├── CurlException.php
+│   │   │   ├── ClientException.php
+│   │   │   └── ServerException.php
+│   ├── Qrcode/           // 二维码生成核心
+│   │   ├── Qrcode.php    // 二维码主类
+│   │   ├── Color.php     // 颜色类
+│   │   ├── LogoPosition.php   // Logo位置枚举
+│   │   ├── RoundBlockSizeMode.php // 圆角模式枚举
+│   │   └── EncodingMode.php     // 编码模式枚举
 │   ├── Helper/           // 全局辅助函数
 │   │   ├── helper.php    // 全局辅助函数文件
 ├── composer.json         // Composer配置
@@ -102,6 +115,41 @@
 - ✅ 支持JSON直接输出
 - ✅ PHP8.3+特性优化：只读属性、类型细化、nullsafe运算符
 - ✅ 线程安全的初始化模式
+
+### HTTP请求模块（Curl）
+- ✅ 支持多种HTTP方法（GET/POST/PUT/PATCH/DELETE）
+- ✅ 支持多种内容类型（JSON/form/multipart）
+- ✅ 灵活的请求选项配置
+- ✅ 响应处理和错误处理
+- ✅ 并发请求支持
+- ✅ PHP 8.5+持久化句柄支持（curl_share_init_persistent）
+- ✅ 重试机制和超时控制
+- ✅ SSL验证和代理支持
+- ✅ 双模式调用：实例调用 + 静态调用
+
+### 二维码生成模块（Qrcode）
+- ✅ 基础二维码生成（文本、URL）
+- ✅ 多种样式定制：
+  - ✅ 圆角点样式（圆形、圆角方形）
+  - ✅ 渐变颜色支持（水平/垂直/对角线方向）
+  - ✅ 自定义前景/背景颜色
+  - ✅ Logo嵌入支持
+  - ✅ 标签文字支持
+- ✅ 多种输出格式（PNG/SVG/WebP/EPS）
+- ✅ 多种数据类型支持：
+  - ✅ URL二维码
+  - ✅ WiFi二维码
+  - ✅ 邮件二维码
+  - ✅ 电话二维码
+  - ✅ 短信二维码
+  - ✅ 名片二维码（vCard）
+  - ✅ 位置二维码
+  - ✅ 比特币二维码
+  - ✅ 日历事件二维码
+- ✅ 多种错误纠正级别（L/M/Q/H）
+- ✅ PHP8.3+特性优化：只读属性、类型声明
+- ✅ 双模式调用：实例调用 + 静态调用
+- ✅ 全局助手函数支持
 
 ### 全局助手函数
 - ✅ 简化调用方式，无需实例化
@@ -2374,6 +2422,704 @@ $msg->reloadCustomCodeFile();
 
 // 使用重新加载后的配置
 $result = $msg->code(800001)->result();
+```
+
+## HTTP请求模块使用示例
+
+HTTP请求模块提供了完整的HTTP客户端功能，支持多种HTTP方法、请求配置、响应处理、错误处理、并发请求和PHP 8.5+持久化句柄支持。
+
+### 基础使用示例
+
+```php
+use Kode\Curl\Curl;
+
+// GET请求
+$response = Curl::get('https://api.example.com/users');
+echo $response->body();
+echo $response->json('data');
+
+// POST请求（JSON）
+$response = Curl::post('https://api.example.com/users', [
+    'name' => '张三',
+    'email' => 'zhangsan@example.com'
+]);
+echo $response->json('id');
+
+// POST请求（表单）
+$response = Curl::post('https://api.example.com/login', [
+    'username' => 'admin',
+    'password' => '123456'
+], 'form');
+
+// POST请求（multipart）
+$response = Curl::post('https://api.example.com/upload', [
+    'file' => new \CURLFile('/path/to/file.jpg')
+], 'multipart');
+```
+
+### 多种HTTP方法
+
+```php
+use Kode\Curl\Curl;
+
+// PUT请求
+$response = Curl::put('https://api.example.com/users/1', [
+    'name' => '李四'
+]);
+echo $response->json();
+
+// PATCH请求
+$response = Curl::patch('https://api.example.com/users/1', [
+    'status' => 'active'
+]);
+echo $response->json();
+
+// DELETE请求
+$response = Curl::delete('https://api.example.com/users/1');
+echo $response->json();
+
+// HEAD请求（仅获取响应头）
+$response = Curl::head('https://api.example.com/users');
+echo $response->header('Content-Type');
+
+// OPTIONS请求
+$response = Curl::options('https://api.example.com/users');
+echo $response->header('Allow');
+```
+
+### 请求配置选项
+
+```php
+use Kode\Curl\Curl;
+
+// 设置请求头
+$response = Curl::get('https://api.example.com/users', [
+    'Authorization' => 'Bearer token123',
+    'Accept-Language' => 'zh-CN'
+]);
+echo $response->json();
+
+// 设置超时时间
+$response = Curl::get('https://api.example.com/users', timeout: 30);
+echo $response->json();
+
+// 设置用户代理
+$response = Curl::get('https://api.example.com/users', userAgent: 'MyApp/1.0');
+echo $response->json();
+
+// 设置来源页面
+$response = Curl::get('https://api.example.com/users', referer: 'https://example.com');
+echo $response->json();
+
+// 设置Cookie
+$response = Curl::get('https://api.example.com/users', cookie: 'session=abc123');
+echo $response->json();
+
+// 禁用SSL验证（仅测试环境）
+$response = Curl::get('https://api.example.com/users', verifySsl: false);
+echo $response->json();
+
+// 设置代理
+$response = Curl::get('https://api.example.com/users', proxy: 'http://proxy.example.com:8080');
+echo $response->json();
+
+// 设置代理认证
+$response = Curl::get('https://api.example.com/users', proxyUserPwd: 'user:password');
+echo $response->json();
+```
+
+### 响应处理
+
+```php
+use Kode\Curl\Curl;
+
+$response = Curl::get('https://api.example.com/users');
+
+// 获取原始响应体
+echo $response->body();
+
+// 获取JSON解析结果
+$data = $response->json();
+echo $data['name'];
+
+// 获取数组格式的JSON
+$array = $response->jsonArray();
+echo $array[0]['name'];
+
+// 获取响应状态码
+$statusCode = $response->statusCode();
+echo $statusCode; // 200
+
+// 获取响应头
+$contentType = $response->header('Content-Type');
+echo $contentType; // 'application/json'
+
+// 获取所有响应头
+$headers = $response->headers();
+print_r($headers);
+
+// 获取响应时间（毫秒）
+$time = $response->time();
+echo $time; // 125.5
+
+// 获取原始响应头信息
+$responseInfo = $response->responseInfo();
+print_r($responseInfo);
+
+// 判断是否成功
+if ($response->isSuccess()) {
+    echo '请求成功';
+}
+
+// 判断是否重定向
+if ($response->isRedirect()) {
+    echo '请求重定向';
+}
+```
+
+### 错误处理
+
+```php
+use Kode\Curl\Curl;
+use Kode\Curl\Exception\CurlException;
+use Kode\Curl\Exception\ClientException;
+use Kode\Curl\Exception\ServerException;
+
+try {
+    $response = Curl::get('https://api.example.com/users');
+    
+    // 4xx客户端错误
+    if ($response->isClientError()) {
+        throw new ClientException(
+            "客户端请求错误: " . $response->statusCode(),
+            $response->statusCode(),
+            $response
+        );
+    }
+    
+    // 5xx服务器错误
+    if ($response->isServerError()) {
+        throw new ServerException(
+            "服务器错误: " . $response->statusCode(),
+            $response->statusCode(),
+            $response
+        );
+    }
+    
+    // 正常响应处理
+    $data = $response->json();
+    print_r($data);
+    
+} catch (ClientException $e) {
+    // 处理4xx错误
+    echo "客户端错误: " . $e->getMessage();
+    echo "状态码: " . $e->getCode();
+    
+} catch (ServerException $e) {
+    // 处理5xx错误
+    echo "服务器错误: " . $e->getMessage();
+    echo "状态码: " . $e->getCode();
+    
+} catch (CurlException $e) {
+    // 处理cURL错误（网络问题等）
+    echo "cURL错误: " . $e->getMessage();
+    echo "错误码: " . $e->getCode();
+    
+} catch (\Exception $e) {
+    // 处理其他异常
+    echo "系统错误: " . $e->getMessage();
+}
+```
+
+### 重试机制
+
+```php
+use Kode\Curl\Curl;
+
+// 自动重试3次，间隔2秒
+$response = Curl::get('https://api.example.com/users')
+                ->retry(3, 2.0);
+
+echo $response->body();
+
+// POST请求带重试
+$response = Curl::post('https://api.example.com/orders', [
+    'product_id' => 123,
+    'quantity' => 1
+])->retry(3, 1.0);
+
+echo $response->json();
+```
+
+### 并发请求
+
+```php
+use Kode\Curl\Curl;
+
+// 并发执行多个请求
+$responses = Curl::multi()
+    ->add('https://api.example.com/users', 'get')
+    ->add('https://api.example.com/posts', 'get')
+    ->add('https://api.example.com/comments', 'get')
+    ->execute();
+
+// 处理响应
+$users = $responses['https://api.example.com/users']->json();
+$posts = $responses['https://api.example.com/posts']->json();
+$comments = $responses['https://api.example.com/comments']->json();
+
+print_r($users);
+print_r($posts);
+print_r($comments);
+
+// 带配置的并发请求
+$responses = Curl::multi()
+    ->add('https://api.example.com/users', 'get', timeout: 10)
+    ->add('https://api.example.com/posts', 'get', timeout: 10)
+    ->add('https://api.example.com/comments', 'get', timeout: 10)
+    ->execute();
+
+// 带请求体的并发请求
+$responses = Curl::multi()
+    ->add('https://api.example.com/users', 'post', [
+        'name' => '张三'
+    ])
+    ->add('https://api.example.com/posts', 'post', [
+        'title' => '文章标题'
+    ])
+    ->execute();
+```
+
+### PHP 8.5+持久化句柄支持
+
+```php
+use Kode\Curl\Curl;
+
+// PHP 8.5+ 自动使用持久化句柄
+// 持久化句柄会在请求结束时保留，避免重复初始化开销
+$response1 = Curl::get('https://api.example.com/users');
+$response2 = Curl::get('https://api.example.com/posts');
+$response3 = Curl::get('https://api.example.com/comments');
+
+// 多个请求复用同一个持久化句柄，提升性能
+
+// 手动设置共享句柄选项
+$response = Curl::get('https://api.example.com/users')
+                ->sharePersistent()
+                ->execute();
+
+echo $response->json();
+```
+
+### 高级配置示例
+
+```php
+use Kode\Curl\Curl;
+
+// 上传文件
+$response = Curl::post('https://api.example.com/upload', [
+    'file' => new \CURLFile('/path/to/image.jpg', 'image/jpeg', 'image.jpg'),
+    'title' => '示例图片'
+]);
+
+echo $response->json();
+
+// 下载文件
+$response = Curl::get('https://api.example.com/file.zip', saveTo: '/path/to/file.zip');
+
+if ($response->isSuccess()) {
+    echo '文件下载成功';
+}
+
+// 发送JSON数据
+$response = Curl::post('https://api.example.com/api', [
+    'key' => 'value'
+], 'json');
+
+echo $response->json();
+
+// 自定义请求
+$response = Curl::request('DELETE', 'https://api.example.com/users/1', [
+    'id' => 1
+]);
+
+echo $response->json();
+```
+
+## 二维码生成模块使用示例
+
+二维码生成模块提供了完整的二维码生成功能，支持多种样式定制、输出格式和数据类型。
+
+### 基础使用示例
+
+```php
+use Kode\Qrcode\Qr;
+
+// 基础文本二维码
+$qr = Qr::create('https://example.com');
+$qr->save('/path/to/qrcode.png');
+
+// 直接输出图片数据
+$imageData = $qr->toString();
+header('Content-Type: image/png');
+echo $imageData;
+
+// 直接输出Base64编码
+$base64 = $qr->toDataUri();
+echo "<img src='{$base64}' />";
+
+// 获取二维码原始对象（用于进一步自定义）
+$qrCode = Qr::create('https://example.com');
+$builder = $qrCode->build();
+```
+
+### 样式定制
+
+```php
+use Kode\Qrcode\Qr;
+
+// 设置二维码大小
+$qr = Qr::create('https://example.com')
+        ->size(500)
+        ->save('/path/to/qrcode.png');
+
+// 设置边距
+$qr = Qr::create('https://example.com')
+        ->size(300)
+        ->margin(20)
+        ->save('/path/to/qrcode.png');
+
+// 设置前景色（RGB）
+$qr = Qr::create('https://example.com')
+        ->foregroundColor(255, 0, 0) // 红色
+        ->save('/path/to/qrcode.png');
+
+// 设置背景色（RGB）
+$qr = Qr::create('https://example.com')
+        ->backgroundColor(255, 255, 0) // 黄色背景
+        ->save('/path/to/qrcode.png');
+
+// 同时设置前景和背景色
+$qr = Qr::create('https://example.com')
+        ->foregroundColor(0, 0, 255) // 蓝色
+        ->backgroundColor(255, 255, 255) // 白色背景
+        ->save('/path/to/qrcode.png');
+
+// 设置错误纠正级别（1-5，对应L/M/Q/H级别）
+$qr = Qr::create('https://example.com')
+        ->errorCorrectionLevel(5) // 最高级别H，可修复30%错误
+        ->save('/path/to/qrcode.png');
+
+// 圆角点样式
+$qr = Qr::create('https://example.com')
+        ->roundDots(true) // 启用圆角点
+        ->save('/path/to/qrcode.png');
+
+// 圆形点样式（带大小控制）
+$qr = Qr::create('https://example.com')
+        ->circularDots(true, 12) // 启用圆形点，尺寸比例12
+        ->save('/path/to/qrcode.png');
+
+// 渐变颜色
+$qr = Qr::create('https://example.com')
+        ->gradient(
+            new \Endroid\QrCode\Color\Color(255, 0, 0),     // 起始颜色（红色）
+            new \Endroid\QrCode\Color\Color(0, 0, 255),     // 结束颜色（蓝色）
+            'vertical' // 渐变方向：horizontal/vertical/diagonal/diagonal_inverse
+        )
+        ->save('/path/to/qrcode.png');
+
+// 组合样式
+$qr = Qr::create('https://example.com')
+        ->size(400)
+        ->margin(15)
+        ->foregroundColor(0, 128, 0) // 绿色
+        ->backgroundColor(240, 240, 240) // 浅灰背景
+        ->errorCorrectionLevel(4) // Q级别
+        ->roundDots(true)
+        ->save('/path/to/qrcode.png');
+```
+
+### Logo嵌入
+
+```php
+use Kode\Qrcode\Qr;
+
+// 添加Logo
+$qr = Qr::create('https://example.com')
+        ->size(400)
+        ->logo('/path/to/logo.png') // Logo图片路径
+        ->save('/path/to/qrcode_with_logo.png');
+
+// 设置Logo大小比例
+$qr = Qr::create('https://example.com')
+        ->size(400)
+        ->logo('/path/to/logo.png', 0.3) // Logo占二维码的30%
+        ->save('/path/to/qrcode_with_logo.png');
+
+// 设置Logo大小比例和边距
+$qr = Qr::create('https://example.com')
+        ->size(400)
+        ->logo('/path/to/logo.png', 0.25) // Logo占25%
+        ->save('/path/to/qrcode_with_logo.png');
+
+// 组合Logo和其他样式
+$qr = Qr::create('https://example.com')
+        ->size(500)
+        ->foregroundColor(0, 0, 0)
+        ->backgroundColor(255, 255, 255)
+        ->errorCorrectionLevel(5) // H级别
+        ->logo('/path/to/logo.png', 0.3)
+        ->save('/path/to/qrcode_with_logo.png');
+```
+
+### 标签文字
+
+```php
+use Kode\Qrcode\Qr;
+
+// 添加标签
+$qr = Qr::create('https://example.com')
+        ->size(400)
+        ->label('官方网站') // 标签文字
+        ->save('/path/to/qrcode_with_label.png');
+
+// 设置标签字体大小
+$qr = Qr::create('https://example.com')
+        ->size(400)
+        ->label('官方网站', 24) // 字体大小24px
+        ->save('/path/to/qrcode_with_label.png');
+
+// 标签文字默认显示在二维码下方，无需额外设置位置
+
+// 组合标签和Logo
+$qr = Qr::create('https://example.com')
+        ->size(500)
+        ->logo('/path/to/logo.png', 0.25)
+        ->label('扫描访问', 20)
+        ->save('/path/to/qrcode_complete.png');
+```
+
+### 多种输出格式
+
+```php
+use Kode\Qrcode\Qr;
+
+// PNG格式（默认）
+$qr = Qr::create('https://example.com');
+$qr->save('/path/to/qrcode.png');
+$pngData = $qr->toString(); // PNG二进制数据
+
+// SVG格式（矢量图，无限放大不失真）
+$qr = Qr::create('https://example.com')
+        ->asSvg() // 设置为SVG格式
+        ->save('/path/to/qrcode.svg');
+$svgData = $qr->toString(); // SVG字符串数据
+
+// WebP格式（现代图片格式，更小体积）
+$qr = Qr::create('https://example.com')
+        ->asWebP()
+        ->save('/path/to/qrcode.webp');
+$webpData = $qr->toString(); // WebP二进制数据
+
+// EPS格式（印刷级矢量格式）
+$qr = Qr::create('https://example.com')
+        ->asEps()
+        ->save('/path/to/qrcode.eps');
+$epsData = $qr->toString(); // EPS字符串数据
+
+// 输出Data URI
+$qr = Qr::create('https://example.com');
+$dataUri = $qr->toDataUri(); // data:image/png;base64,...
+echo "<img src='{$dataUri}' />";
+
+// 根据用途选择格式
+// PNG - 通用
+// SVG - 打印、放大
+// WebP - 网页加载优化
+// EPS - 专业印刷
+```
+
+### 多种数据类型支持
+
+```php
+use Kode\Qrcode\Qr;
+
+// URL二维码
+$qr = Qr::url('https://example.com')
+        ->size(300)
+        ->save('/path/to/url_qr.png');
+
+// WiFi二维码
+$qr = Qr::wifi('MyWiFi', 'password123', 'wpa') // WiFi名、密码、加密类型
+        ->size(300)
+        ->save('/path/to/wifi_qr.png');
+
+// 隐藏WiFi
+$qr = Qr::wifi('MyWiFi', 'password123', 'wpa', true) // true表示隐藏网络
+        ->size(300)
+        ->save('/path/to/wifi_hidden_qr.png');
+
+// 邮件二维码
+$qr = Qr::email('user@example.com', '主题', '内容')
+        ->size(300)
+        ->save('/path_to/email_qr.png');
+
+// 电话二维码
+$qr = Qr::phone('13800138000')
+        ->size(300)
+        ->save('/path/to/phone_qr.png');
+
+// 短信二维码
+$qr = Qr::sms('13800138000', '您好，这是测试短信')
+        ->size(300)
+        ->save('/path/to/sms_qr.png');
+
+// 位置二维码
+$qr = Qr::geo(39.9042, 116.4074) // 经度、纬度
+        ->size(300)
+        ->save('/path/to/geo_qr.png');
+
+// 比特币二维码
+$qr = Qr::bitcoin('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 0.5) // 地址、金额（BTC）
+        ->size(300)
+        ->save('/path/to/bitcoin_qr.png');
+
+// 日历事件二维码
+$qr = Qr::event(
+        '圣诞节聚会',           // 事件标题
+        '2024-12-25 10:00:00', // 开始时间
+        '2024-12-25 12:00:00', // 结束时间
+        '北京市朝阳区某某路'    // 地点
+    )
+    ->size(300)
+    ->save('/path/to/calendar_qr.png');
+
+// vCard名片二维码
+$contactData = [
+    'email' => 'zhangsan@example.com',
+    'phone' => '13800138000',
+    'org' => '示例公司',           // organization
+    'title' => '工程师',
+    'address' => '某某路123号'
+];
+$qr = Qr::vcard($contactData, '三', '张') // contact数组、姓、名
+        ->size(300)
+        ->save('/path/to/vcard_qr.png');
+```
+
+### 编码模式设置
+
+```php
+use Kode\Qrcode\Qr;
+
+// 自动编码（默认）
+$qr = Qr::create('https://example.com');
+$qr->save('/path/to/qrcode.png');
+
+// 数字编码（纯数字）
+$qr = Qr::create('1234567890')
+        ->encodingMode('numeric')
+        ->save('/path/to/numeric_qr.png');
+
+// 字母数字编码
+$qr = Qr::create('HELLO123')
+        ->encodingMode('alphanumeric')
+        ->save('/path/to/alpha_qr.png');
+
+// 二进制编码（默认）
+$qr = Qr::create('Hello World')
+        ->encodingMode('byte')
+        ->save('/path/to/byte_qr.png');
+
+// 日文编码
+$qr = Qr::create('こんにちは')
+        ->encodingMode('kanji')
+        ->save('/path/to/kanji_qr.png');
+```
+
+### 圆角块大小模式
+
+```php
+use Kode\Qrcode\Qr;
+
+// 最小圆角块（minus）
+$qr = Qr::create('https://example.com')
+        ->roundStyle('minus')
+        ->save('/path/to/qrcode.png');
+
+// 标称圆角块（nominal，默认）
+$qr = Qr::create('https://example.com')
+        ->roundStyle('nominal')
+        ->save('/path/to/qrcode.png');
+
+// 最大圆角块（plus）
+$qr = Qr::create('https://example.com')
+        ->roundStyle('plus')
+        ->save('/path/to/qrcode.png');
+
+// 极高圆角块（murky）
+$qr = Qr::create('https://example.com')
+        ->roundStyle('murky')
+        ->save('/path/to/qrcode.png');
+```
+
+### 完整自定义示例
+
+```php
+use Kode\Qrcode\Qr;
+
+// 完整自定义的二维码
+$qr = Qr::create('https://example.com')
+    // 基本设置
+    ->size(500)
+    ->margin(15)
+    ->errorCorrectionLevel(5) // H级别
+    
+    // 颜色设置
+    ->foregroundColor(0, 102, 204) // 蓝色前景
+    ->backgroundColor(255, 255, 255) // 白色背景
+    
+    // 样式设置
+    ->roundDots(true)
+    
+    // Logo设置
+    ->logo('/path/to/logo.png', 0.25)
+    
+    // 标签设置
+    ->label('官方网站', 20) // 标签显示在二维码下方
+    
+    // 保存文件
+    ->save('/path/to/custom_qrcode.png');
+
+// 生成Data URI用于网页显示
+$base64 = $qr->toDataUri();
+echo "<img src='{$base64}' alt='二维码' />";
+
+// 带渐变效果的二维码
+$qrGradient = Qr::create('https://example.com')
+    ->size(400)
+    ->margin(10)
+    ->errorCorrectionLevel(4) // Q级别
+    ->roundDots(true)
+    ->gradient(
+        new \Endroid\QrCode\Color\Color(255, 87, 34),  // 橙红色
+        new \Endroid\QrCode\Color\Color(33, 150, 243), // 蓝色
+        'diagonal' // 对角线渐变
+    )
+    ->save('/path/to/gradient_qrcode.png');
+
+// 带Logo和渐变的组合
+$qrCombo = Qr::create('https://example.com')
+    ->size(600)
+    ->margin(20)
+    ->foregroundColor(76, 175, 80) // 绿色
+    ->backgroundColor(245, 245, 245) // 浅灰背景
+    ->errorCorrectionLevel(5) // H级别
+    ->circularDots(true, 12)
+    ->logo('/path/to/logo.png', 0.3)
+    ->label('扫码访问', 22)
+    ->save('/path/to/combo_qrcode.png');
 ```
 
 ## 全局助手函数使用示例

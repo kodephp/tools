@@ -91,12 +91,15 @@ class Time
 
     /**
      * 时间差（人类可读格式）
-     * @param int $timestamp 时间戳
-     * @param int $current 当前时间戳
+     * @param int|string $timestamp 时间戳或时间字符串
+     * @param int|null $current 当前时间戳
      * @return string 时间差描述
      */
-    public static function diffForHumans(int $timestamp, ?int $current = null): string
+    public static function diffForHumans(int|string $timestamp, ?int $current = null): string
     {
+        if (is_string($timestamp)) {
+            $timestamp = strtotime($timestamp);
+        }
         $current = $current ?? time();
         $diff = $current - $timestamp;
 

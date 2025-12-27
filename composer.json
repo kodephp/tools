@@ -1,10 +1,10 @@
 {
     "name": "kode/tools",
-    "description": "PHP8.3+通用工具包，包含数组处理、字符串处理、时间处理、加解密、IP、地理计算、全局辅助方法等功能",
+    "description": "PHP8.3+通用工具包，包含数组处理、字符串处理、时间处理、加解密、IP、地理计算、Curl、二维码生成、全局辅助方法等功能",
     "type": "library",
     "license": "MIT",
-    "version": "1.1.5",
-    "keywords": ["php", "array", "string", "time", "message", "crypto", "tree", "ip", "geo", "helper", "tools"],
+    "version": "1.1.6",
+    "keywords": ["php", "array", "string", "time", "message", "crypto", "tree", "ip", "geo", "helper", "curl", "qrcode", "tools"],
     "homepage": "https://github.com/kode/tools",
     "authors": [
         {
@@ -26,7 +26,9 @@
         "php": ">=8.1",
         "ext-openssl": "*",
         "ext-json": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "ext-gd": "*",
+        "endroid/qr-code": "^6.0"
     },
     "require-dev": {
         "phpstan/phpstan": "^1.10",
