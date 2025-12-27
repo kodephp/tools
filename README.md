@@ -1,5 +1,27 @@
 # kode/tools - PHP8.3+ 通用工具包
 
+## 导航
+
+- [简介](#简介)
+- [核心特性](#核心特性)
+- [安装](#安装)
+- [使用示例](#使用示例)
+  - [消息体模块](#消息体模块)
+  - [加解密模块](#加解密模块)
+  - [数组处理模块](#数组处理模块)
+  - [字符串处理模块](#字符串处理模块)
+  - [时间处理模块](#时间处理模块)
+  - [数学计算模块](#数学计算模块)
+  - [地理位置模块](#地理位置模块)
+  - [IP地址处理模块](#ip地址处理模块)
+  - [Curl模块](#curl模块)
+  - [Qrcode模块](#qrcode模块)
+  - [全局辅助函数](#全局辅助函数)
+- [API文档](#api文档)
+- [版本历史](#版本历史)
+- [贡献指南](#贡献指南)
+- [许可证](#许可证)
+
 ## 简介
 
 这是一个基于PHP8.3+特性开发的模块化通用工具包，提供了数组处理、字符串处理、时间处理、加解密、消息体、IP地址处理、地理计算、全局辅助方法等功能。支持对象和静态两种调用方式，兼容进程和协程环境。
@@ -51,6 +73,19 @@
 ```
 
 ### 数组处理模块
+
+#### 核心方法
+
+| 方法名 | 功能描述 | 调用示例 |
+|--------|----------|----------|
+| [`first()`](#first) | 获取第一个元素 | `Arr::first([1, 2, 3])` |
+| [`last()`](#last) | 获取最后一个元素 | `Arr::last([1, 2, 3])` |
+| [`find()`](#find) | 查找满足条件的元素 | `Arr::find([1, 2, 3], fn($n) => $n > 1)` |
+| [`tree()`](#tree) | 数组转树形结构 | `Arr::tree($list, 'id', 'pid')` |
+| [`list()`](#list) | 树形结构转数组 | `Arr::list($tree)` |
+| [`deepMerge()`](#deepmerge) | 深度合并数组 | `Arr::deepMerge($arr1, $arr2)` |
+
+#### 特性
 - ✅ 树形结构转换（数组转树、树转数组）
 - ✅ 层级结构转换
 - ✅ 路径结构转换
@@ -63,6 +98,19 @@
 - ✅ 支持点语法和数组嵌套键访问
 
 ### 字符串处理模块
+
+#### 核心方法
+
+| 方法名 | 功能描述 | 调用示例 |
+|--------|----------|----------|
+| [`maskPhone()`](#maskphone) | 手机号脱敏 | `Str::maskPhone('13800138000')` |
+| [`maskEmail()`](#maskemail) | 邮箱脱敏 | `Str::maskEmail('user@example.com')` |
+| [`camel()`](#camel) | 转驼峰命名 | `Str::camel('hello_world')` |
+| [`snake()`](#snake) | 转蛇形命名 | `Str::snake('helloWorld')` |
+| [`toBase64()`](#tobase64) | 转Base64编码 | `Str::toBase64('hello')` |
+| [`fromBase64()`](#frombase64) | Base64解码 | `Str::fromBase64('aGVsbG8=')` |
+
+#### 特性
 - ✅ 随机字符串生成
 - ✅ UUID生成
 - ✅ 命名转换（驼峰、蛇形、大驼峰）
@@ -76,6 +124,18 @@
 - ✅ 多分隔符字符串分割
 
 ### 时间处理模块
+
+#### 核心方法
+
+| 方法名 | 功能描述 | 调用示例 |
+|--------|----------|----------|
+| [`human()`](#human) | 人性化时间显示 | `Time::human('2024-01-01')` |
+| [`diff()`](#diff) | 时间差（秒） | `Time::diff('2024-01-01')` |
+| [`today()`](#today) | 今天开始时间 | `Time::today()` |
+| [`thisWeek()`](#thisweek) | 本周时间范围 | `Time::thisWeek()` |
+| [`thisMonth()`](#thismonth) | 本月时间范围 | `Time::thisMonth()` |
+
+#### 特性
 - ✅ 时间格式化
 - ✅ 时间计算（加法、减法、差值）
 - ✅ 常用时间获取（当前时间、今天、昨天、明天）
@@ -83,6 +143,18 @@
 - ✅ 人性化时间显示、日期范围计算
 
 ### 加解密模块
+
+#### 核心方法
+
+| 方法名 | 功能描述 | 调用示例 |
+|--------|----------|----------|
+| [`cryptoMd5()`](#cryptomd5) | MD5加密（支持加盐） | `Crypto::cryptoMd5('123456', 'salt')` |
+| [`cryptoPasswordHash()`](#cryptopasswordhash) | 密码哈希 | `Crypto::cryptoPasswordHash('123456')` |
+| [`cryptoPasswordVerify()`](#cryptopasswordverify) | 密码验证 | `Crypto::cryptoPasswordVerify('123456', $hash)` |
+| [`cryptoSslEncrypt()`](#cryptosslencrypt) | SSL对称加密 | `Crypto::cryptoSslEncrypt('data', $key)` |
+| [`cryptoSslDecrypt()`](#cryptossldecrypt) | SSL对称解密 | `Crypto::cryptoSslDecrypt($encrypted, $key)` |
+
+#### 特性
 - ✅ MD5加密（支持加盐）
 - ✅ 密码哈希（基于PHP原生password_hash）
 - ✅ SSL对称加密（AES-256-GCM）
@@ -116,7 +188,27 @@
 - ✅ PHP8.3+特性优化：只读属性、类型细化、nullsafe运算符
 - ✅ 线程安全的初始化模式
 
-### HTTP请求模块（Curl）
+### Curl模块
+
+#### 核心方法
+
+| 方法名 | 功能描述 | 调用示例 |
+|--------|----------|----------|
+| [`get()`](#get) | GET请求 | `Curl::get('https://api.example.com')->send()` |
+| [`post()`](#post) | POST请求 | `Curl::post('https://api.example.com', $data)->send()` |
+| [`put()`](#put) | PUT请求 | `Curl::put('https://api.example.com/1', $data)->send()` |
+| [`delete()`](#delete) | DELETE请求 | `Curl::delete('https://api.example.com/1')->send()` |
+| [`timeout()`](#timeout) | 设置超时 | `Curl::get('https://api.example.com')->timeout(10)->send()` |
+| [`header()`](#header) | 设置请求头 | `Curl::get('https://api.example.com')->header('X-Key', 'value')->send()` |
+
+#### 特性
+- ✅ 支持HTTP/HTTPS协议
+- ✅ 支持GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS请求
+- ✅ 支持请求超时设置
+- ✅ 支持请求头设置
+- ✅ 支持请求参数设置
+- ✅ 支持响应状态码、响应头、响应体获取
+- ✅ 支持异常处理
 - ✅ 支持多种HTTP方法（GET/POST/PUT/PATCH/DELETE）
 - ✅ 支持多种内容类型（JSON/form/multipart）
 - ✅ 灵活的请求选项配置
@@ -127,7 +219,26 @@
 - ✅ SSL验证和代理支持
 - ✅ 双模式调用：实例调用 + 静态调用
 
-### 二维码生成模块（Qrcode）
+### Qrcode模块
+
+#### 核心方法
+
+| 方法名 | 功能描述 | 调用示例 |
+|--------|----------|----------|
+| [`text()`](#text) | 设置二维码内容 | `Qr::text('Hello World')` |
+| [`size()`](#size) | 设置二维码大小 | `Qr::text('Hello')->size(300)` |
+| [`errorCorrection()`](#errorcorrection) | 设置错误纠正级别 | `Qr::text('Hello')->errorCorrection('H')` |
+| [`logo()`](#logo) | 添加Logo | `Qr::text('Hello')->logo('path/to/logo.png')` |
+| [`toFile()`](#tofile) | 保存为文件 | `Qr::text('Hello')->toFile('qrcode.png')` |
+| [`toBase64()`](#tobase64) | 生成Base64编码 | `Qr::text('Hello')->toBase64()` |
+
+#### 特性
+- ✅ 支持多种二维码大小
+- ✅ 支持多种错误纠正级别
+- ✅ 支持添加Logo
+- ✅ 支持自定义颜色
+- ✅ 支持多种输出格式（PNG、SVG、EPS）
+- ✅ 支持Base64编码输出
 - ✅ 基础二维码生成（文本、URL）
 - ✅ 多种样式定制：
   - ✅ 圆角点样式（圆形、圆角方形）
@@ -5502,6 +5613,21 @@ $formatted = Ip::format('192.168.1.1', true); // '192.168.001.001'（补零格�
 - ✅ 优化时间处理模块，添加30+新方法
 - ✅ 优化地理位置模块，添加坐标转换和方位角计算
 
+## 版本历史
+
+### v1.1.6 (2025-12-27)
+- ✅ 新增Curl模块（支持HTTP请求、持久连接、重试机制）
+- ✅ 新增Qrcode模块（支持二维码生成、自定义样式、Logo嵌入）
+- ✅ 完善测试用例覆盖
+- ✅ 优化文档结构，添加左侧导航
+- ✅ 修复已知问题
+
+### v1.1.5 (2025-12-27)
+- ✅ 完善README文档，添加详细使用方法
+- ✅ 优化数学计算模块，添加金融计算和统计分析功能
+- ✅ 优化时间处理模块，添加30+新方法
+- ✅ 优化地理位置模块，添加坐标转换和方位角计算
+
 ### v1.1.0 (2025-12-26)
 - ✅ 初始版本发布
 - ✅ 实现消息体模块（链式调用、自定义状态码）
@@ -5519,16 +5645,385 @@ $formatted = Ip::format('192.168.1.1', true); // '192.168.001.001'（补零格�
 
 欢迎提交Issue和Pull Request来改进这个工具包。
 
-## 许可证
+## API文档
 
-MIT License
+### 数组处理模块
 
-| 方法名 | 功能描述 | 参数说明 |
-|--------|----------|----------|
-| `tree(array $list, string $idField = 'id', string $parentIdField = 'parent_id', string $childrenField = 'children')` | 数组转树形结构 | $list: 数组, $idField: ID字段名, $parentIdField: 父ID字段名, $childrenField: 子节点字段名 |
-| `list(array $tree, string $childrenField = 'children')` | 树形结构转数组 | $tree: 树形结构, $childrenField: 子节点字段名 |
-| `level(array $list, string $idField = 'id', string $parentIdField = 'parent_id', string $levelField = 'level')` | 数组转层级结构 | $list: 数组, $idField: ID字段名, $parentIdField: 父ID字段名, $levelField: 层级字段名 |
-| `path(array $list, string $idField = 'id', string $parentIdField = 'parent_id', string $nameField = 'name', string $pathField = 'path', string $pathSeparator = '/')` | 数组转路径结构 | $list: 数组, $idField: ID字段名, $parentIdField: 父ID字段名, $nameField: 名称字段名, $pathField: 路径字段名, $pathSeparator: 路径分隔符 |
+#### <a name="first"></a> `first(array $array)`
+获取第一个元素
+
+**参数：**
+- `array $array` - 输入数组
+
+**返回：**
+- `mixed` - 第一个元素
+
+---
+
+#### <a name="last"></a> `last(array $array)`
+获取最后一个元素
+
+**参数：**
+- `array $array` - 输入数组
+
+**返回：**
+- `mixed` - 最后一个元素
+
+---
+
+#### <a name="find"></a> `find(array $array, callable $callback)`
+查找满足条件的元素
+
+**参数：**
+- `array $array` - 输入数组
+- `callable $callback` - 回调函数
+
+**返回：**
+- `mixed` - 找到的元素
+
+---
+
+#### <a name="tree"></a> `tree(array $list, string $idField = 'id', string $parentIdField = 'parent_id', string $childrenField = 'children')`
+数组转树形结构
+
+**参数：**
+- `array $list` - 输入数组
+- `string $idField` - ID字段名
+- `string $parentIdField` - 父ID字段名
+- `string $childrenField` - 子节点字段名
+
+**返回：**
+- `array` - 树形结构
+
+---
+
+#### <a name="list"></a> `list(array $tree, string $childrenField = 'children')`
+树形结构转数组
+
+**参数：**
+- `array $tree` - 树形结构
+- `string $childrenField` - 子节点字段名
+
+**返回：**
+- `array` - 扁平化数组
+
+---
+
+#### <a name="deepmerge"></a> `deepMerge(array ...$arrays)`
+深度合并数组
+
+**参数：**
+- `array ...$arrays` - 要合并的数组
+
+**返回：**
+- `array` - 合并后的数组
+
+### 字符串处理模块
+
+#### <a name="maskphone"></a> `maskPhone(string $phone)`
+手机号脱敏
+
+**参数：**
+- `string $phone` - 手机号
+
+**返回：**
+- `string` - 脱敏后的手机号
+
+---
+
+#### <a name="maskemail"></a> `maskEmail(string $email)`
+邮箱脱敏
+
+**参数：**
+- `string $email` - 邮箱
+
+**返回：**
+- `string` - 脱敏后的邮箱
+
+---
+
+#### <a name="camel"></a> `camel(string $str, string $separator = '_')`
+转驼峰命名
+
+**参数：**
+- `string $str` - 输入字符串
+- `string $separator` - 分隔符
+
+**返回：**
+- `string` - 驼峰命名
+
+---
+
+#### <a name="snake"></a> `snake(string $str, string $separator = '_')`
+转蛇形命名
+
+**参数：**
+- `string $str` - 输入字符串
+- `string $separator` - 分隔符
+
+**返回：**
+- `string` - 蛇形命名
+
+---
+
+#### <a name="tobase64"></a> `toBase64(string $str)`
+转Base64编码
+
+**参数：**
+- `string $str` - 输入字符串
+
+**返回：**
+- `string` - Base64编码
+
+---
+
+#### <a name="frombase64"></a> `fromBase64(string $str)`
+Base64解码
+
+**参数：**
+- `string $str` - Base64编码
+
+**返回：**
+- `string` - 解码后的字符串
+
+### 时间处理模块
+
+#### <a name="human"></a> `human(string|DateTimeInterface $time)`
+人性化时间显示
+
+**参数：**
+- `string|DateTimeInterface $time` - 输入时间
+
+**返回：**
+- `string` - 人性化时间
+
+---
+
+#### <a name="diff"></a> `diff(string|DateTimeInterface $time)`
+时间差（秒）
+
+**参数：**
+- `string|DateTimeInterface $time` - 输入时间
+
+**返回：**
+- `int` - 时间差（秒）
+
+---
+
+#### <a name="today"></a> `today()`
+今天开始时间
+
+**返回：**
+- `string` - 今天开始时间
+
+---
+
+#### <a name="thisweek"></a> `thisWeek()`
+本周时间范围
+
+**返回：**
+- `array` - 包含start和end的数组
+
+---
+
+#### <a name="thismonth"></a> `thisMonth()`
+本月时间范围
+
+**返回：**
+- `array` - 包含start和end的数组
+
+### 加解密模块
+
+#### <a name="cryptomd5"></a> `cryptoMd5(string $str, string $salt = '')`
+MD5加密（支持加盐）
+
+**参数：**
+- `string $str` - 输入字符串
+- `string $salt` - 盐值
+
+**返回：**
+- `string` - MD5哈希
+
+---
+
+#### <a name="cryptopasswordhash"></a> `cryptoPasswordHash(string $str)`
+密码哈希
+
+**参数：**
+- `string $str` - 输入字符串
+
+**返回：**
+- `string` - 密码哈希
+
+---
+
+#### <a name="cryptopasswordverify"></a> `cryptoPasswordVerify(string $str, string $hash)`
+密码验证
+
+**参数：**
+- `string $str` - 输入字符串
+- `string $hash` - 密码哈希
+
+**返回：**
+- `bool` - 验证结果
+
+---
+
+#### <a name="cryptosslencrypt"></a> `cryptoSslEncrypt(string $str, string $key)`
+SSL对称加密
+
+**参数：**
+- `string $str` - 输入字符串
+- `string $key` - 密钥
+
+**返回：**
+- `string` - 加密后的字符串
+
+---
+
+#### <a name="cryptossldecrypt"></a> `cryptoSslDecrypt(string $str, string $key)`
+SSL对称解密
+
+**参数：**
+- `string $str` - 加密后的字符串
+- `string $key` - 密钥
+
+**返回：**
+- `string` - 解密后的字符串
+
+### Curl模块
+
+#### <a name="get"></a> `get(string $url, array $params = [])`
+GET请求
+
+**参数：**
+- `string $url` - 请求URL
+- `array $params` - 请求参数
+
+**返回：**
+- `Curl` - Curl实例
+
+---
+
+#### <a name="post"></a> `post(string $url, array $data = [])`
+POST请求
+
+**参数：**
+- `string $url` - 请求URL
+- `array $data` - 请求数据
+
+**返回：**
+- `Curl` - Curl实例
+
+---
+
+#### <a name="put"></a> `put(string $url, array $data = [])`
+PUT请求
+
+**参数：**
+- `string $url` - 请求URL
+- `array $data` - 请求数据
+
+**返回：**
+- `Curl` - Curl实例
+
+---
+
+#### <a name="delete"></a> `delete(string $url)`
+DELETE请求
+
+**参数：**
+- `string $url` - 请求URL
+
+**返回：**
+- `Curl` - Curl实例
+
+---
+
+#### <a name="timeout"></a> `timeout(int $seconds)`
+设置超时
+
+**参数：**
+- `int $seconds` - 超时时间（秒）
+
+**返回：**
+- `Curl` - Curl实例
+
+---
+
+#### <a name="header"></a> `header(string $name, string $value)`
+设置请求头
+
+**参数：**
+- `string $name` - 头名称
+- `string $value` - 头值
+
+**返回：**
+- `Curl` - Curl实例
+
+### Qrcode模块
+
+#### <a name="text"></a> `text(string $text)`
+设置二维码内容
+
+**参数：**
+- `string $text` - 二维码内容
+
+**返回：**
+- `Qr` - Qr实例
+
+---
+
+#### <a name="size"></a> `size(int $size)`
+设置二维码大小
+
+**参数：**
+- `int $size` - 二维码大小
+
+**返回：**
+- `Qr` - Qr实例
+
+---
+
+#### <a name="errorcorrection"></a> `errorCorrection(string $level)`
+设置错误纠正级别
+
+**参数：**
+- `string $level` - 错误纠正级别（L/M/Q/H）
+
+**返回：**
+- `Qr` - Qr实例
+
+---
+
+#### <a name="logo"></a> `logo(string $path, int $size = 30)`
+添加Logo
+
+**参数：**
+- `string $path` - Logo路径
+- `int $size` - Logo大小
+
+**返回：**
+- `Qr` - Qr实例
+
+---
+
+#### <a name="tofile"></a> `toFile(string $path)`
+保存为文件
+
+**参数：**
+- `string $path` - 保存路径
+
+**返回：**
+- `void`
+
+---
+
+#### <a name="tobase64"></a> `toBase64()`
+生成Base64编码
+
+**返回：**
+- `string` - Base64编码
 
 ## 状态码列表
 
