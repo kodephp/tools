@@ -78,12 +78,12 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| `first()` | 获取第一个元素 | `Arr::first([1, 2, 3])` |
-| `last()` | 获取最后一个元素 | `Arr::last([1, 2, 3])` |
-| `find()` | 查找满足条件的元素 | `Arr::find([1, 2, 3], fn($n) => $n > 1)` |
-| `tree()` | 数组转树形结构 | `Arr::tree($list, 'id', 'pid')` |
-| `list()` | 树形结构转数组 | `Arr::list($tree)` |
-| `deepMerge()` | 深度合并数组 | `Arr::deepMerge($arr1, $arr2)` |
+| [`first()`](#first---数组首元素) | 获取第一个元素 | `Arr::first([1, 2, 3])` |
+| [`last()`](#last---数组尾元素) | 获取最后一个元素 | `Arr::last([1, 2, 3])` |
+| [`find()`](#find---查找满足条件的元素) | 查找满足条件的元素 | `Arr::find([1, 2, 3], fn($n) => $n > 1)` |
+| [`tree()`](#tree---数组转树形结构) | 数组转树形结构 | `Arr::tree($list, 'id', 'pid')` |
+| [`list()`](#list---树形结构转数组) | 树形结构转数组 | `Arr::list($tree)` |
+| [`deepMerge()`](#deepmerge---数组深度合并) | 深度合并数组 | `Arr::deepMerge($arr1, $arr2)` |
 
 #### 特性
 - ✅ 树形结构转换（数组转树、树转数组）
@@ -103,12 +103,12 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| `maskPhone()` | 手机号脱敏 | `Str::maskPhone('13800138000')` |
-| `maskEmail()` | 邮箱脱敏 | `Str::maskEmail('user@example.com')` |
-| `camel()` | 转驼峰命名 | `Str::camel('hello_world')` |
-| `snake()` | 转蛇形命名 | `Str::snake('helloWorld')` |
-| `toBase64()` | 转Base64编码 | `Str::toBase64('hello')` |
-| `fromBase64()` | Base64解码 | `Str::fromBase64('aGVsbG8=')` |
+| [`maskPhone()`](#maskphone---手机号脱敏) | 手机号脱敏 | `Str::maskPhone('13800138000')` |
+| [`maskEmail()`](#maskemail---邮箱脱敏) | 邮箱脱敏 | `Str::maskEmail('user@example.com')` |
+| [`camel()`](#camel---下划线转驼峰) | 转驼峰命名 | `Str::camel('hello_world')` |
+| [`snake()`](#snake---驼峰转下划线) | 转蛇形命名 | `Str::snake('helloWorld')` |
+| [`toBase64()`](#tobase64---转base64编码) | 转Base64编码 | `Str::toBase64('hello')` |
+| [`fromBase64()`](#frombase64---base64解码) | Base64解码 | `Str::fromBase64('aGVsbG8=')` |
 
 #### 特性
 - ✅ 随机字符串生成
@@ -129,11 +129,19 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| `human()` | 人性化时间显示 | `Time::human('2024-01-01')` |
-| `diff()` | 时间差（秒） | `Time::diff('2024-01-01')` |
-| `today()` | 今天开始时间 | `Time::today()` |
-| `thisWeek()` | 本周时间范围 | `Time::thisWeek()` |
-| `thisMonth()` | 本月时间范围 | `Time::thisMonth()` |
+| [`format()`](#format---格式化时间) | 格式化时间 | `Time::format(time(), 'Y-m-d')` |
+| [`now()`](#now---获取当前时间) | 获取当前时间 | `Time::now()` |
+| [`today()`](#today---获取今天日期) | 获取今天日期 | `Time::today()` |
+| [`yesterday()`](#yesterday---获取昨天日期) | 获取昨天日期 | `Time::yesterday()` |
+| [`tomorrow()`](#tomorrow---获取明天日期) | 获取明天日期 | `Time::tomorrow()` |
+| [`add()`](#add---时间加法) | 时间加法 | `Time::add(time(), 3600)` |
+| [`sub()`](#sub---时间减法) | 时间减法 | `Time::sub(time(), 3600)` |
+| [`diff()`](#diff---时间差) | 时间差 | `Time::diff(time(), time() - 3600)` |
+| [`diffForHumans()`](#diffforhumans---人性化时间差) | 人性化时间差 | `Time::diffForHumans(time() - 3600)` |
+| [`weekStart()`](#weekstart---获取本周开始时间) | 本周开始时间 | `Time::weekStart()` |
+| [`weekEnd()`](#weekend---获取本周结束时间) | 本周结束时间 | `Time::weekEnd()` |
+| [`monthStart()`](#monthstart---获取本月开始时间) | 本月开始时间 | `Time::monthStart()` |
+| [`monthEnd()`](#monthend---获取本月结束时间) | 本月结束时间 | `Time::monthEnd()` |
 
 #### 特性
 - ✅ 时间格式化
@@ -148,11 +156,11 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| `cryptoMd5()` | MD5加密（支持加盐） | `Crypto::cryptoMd5('123456', 'salt')` |
-| `cryptoPasswordHash()` | 密码哈希 | `Crypto::cryptoPasswordHash('123456')` |
-| `cryptoPasswordVerify()` | 密码验证 | `Crypto::cryptoPasswordVerify('123456', $hash)` |
-| `cryptoSslEncrypt()` | SSL对称加密 | `Crypto::cryptoSslEncrypt('data', $key)` |
-| `cryptoSslDecrypt()` | SSL对称解密 | `Crypto::cryptoSslDecrypt($encrypted, $key)` |
+| [`cryptoMd5()`](#cryptomd5---md5加密支持加盐) | MD5加密（支持加盐） | `Crypto::cryptoMd5('123456', 'salt')` |
+| [`cryptoPasswordHash()`](#cryptopasswordhash---密码哈希) | 密码哈希 | `Crypto::cryptoPasswordHash('123456')` |
+| [`cryptoPasswordVerify()`](#cryptopasswordverify---密码验证) | 密码验证 | `Crypto::cryptoPasswordVerify('123456', $hash)` |
+| [`cryptoSslEncrypt()`](#cryptossleencrypt---ssl对称加密) | SSL对称加密 | `Crypto::cryptoSslEncrypt('data', $key)` |
+| [`cryptoSslDecrypt()`](#cryptosslecrypt---ssl对称解密) | SSL对称解密 | `Crypto::cryptoSslDecrypt($encrypted, $key)` |
 
 #### 特性
 - ✅ MD5加密（支持加盐）
@@ -176,14 +184,14 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| `add()` | 高精度加法 | `Math::add('1.1', '2.2')` |
-| `sub()` | 高精度减法 | `Math::sub('3.3', '1.1')` |
-| `mul()` | 高精度乘法 | `Math::mul('2.5', '4')` |
-| `div()` | 高精度除法 | `Math::div('10', '3')` |
-| `avg()` | 平均数 | `Math::avg([1, 2, 3, 4, 5])` |
-| `median()` | 中位数 | `Math::median([1, 2, 3, 4, 5])` |
-| `discount()` | 计算折扣价 | `Math::discount('100', '0.2')` |
-| `tax()` | 计算税额 | `Math::tax('100', '0.13')` |
+| [`add()`](#add---高精度加法) | 高精度加法 | `Math::add('1.1', '2.2')` |
+| [`sub()`](#sub---高精度减法) | 高精度减法 | `Math::sub('3.3', '1.1')` |
+| [`mul()`](#mul---高精度乘法) | 高精度乘法 | `Math::mul('2.5', '4')` |
+| [`div()`](#div---高精度除法) | 高精度除法 | `Math::div('10', '3')` |
+| [`avg()`](#avg---多维数组求平均值) | 平均数 | `Math::avg([1, 2, 3, 4, 5])` |
+| [`median()`](#median---中位数) | 中位数 | `Math::median([1, 2, 3, 4, 5])` |
+| [`discount()`](#discount---折扣计算) | 计算折扣价 | `Math::discount('100', '0.2')` |
+| [`tax()`](#tax---税费计算) | 计算税额 | `Math::tax('100', '0.13')` |
 
 #### 特性
 - ✅ 高精度计算（使用bcmath扩展）
@@ -199,12 +207,12 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| `distance()` | 计算两点距离 | `Geo::distance(39.9042, 116.4074, 31.2304, 121.4737)` |
-| `isValidCoordinate()` | 验证坐标 | `Geo::isValidCoordinate(39.9042, 116.4074)` |
-| `wgs84ToGcj02()` | WGS84转GCJ02 | `Geo::wgs84ToGcj02(39.9042, 116.4074)` |
-| `gcj02ToBd09()` | GCJ02转BD09 | `Geo::gcj02ToBd09(39.9042, 116.4074)` |
-| `getBearing()` | 计算方位角 | `Geo::getBearing(39.9042, 116.4074, 31.2304, 121.4737)` |
-| `getMidpoint()` | 计算中点坐标 | `Geo::getMidpoint(39.9042, 116.4074, 31.2304, 121.4737)` |
+| [`distance()`](#distance---计算两个坐标之间的距离) | 计算两点距离 | `Geo::distance(39.9042, 116.4074, 31.2304, 121.4737)` |
+| [`isValidCoordinate()`](#isvalidcoordinate---坐标验证) | 验证坐标 | `Geo::isValidCoordinate(39.9042, 116.4074)` |
+| [`wgs84ToGcj02()`](#wgs84togcj02---坐标转换wgs84转gcj02) | WGS84转GCJ02 | `Geo::wgs84ToGcj02(39.9042, 116.4074)` |
+| [`gcj02ToBd09()`](#gcj02tobd09---坐标转换gcj02转bd09) | GCJ02转BD09 | `Geo::gcj02ToBd09(39.9042, 116.4074)` |
+| [`getBearing()`](#getbearing---计算方位角) | 计算方位角 | `Geo::getBearing(39.9042, 116.4074, 31.2304, 121.4737)` |
+| [`getMidpoint()`](#getmidpoint---计算中点坐标) | 计算中点坐标 | `Geo::getMidpoint(39.9042, 116.4074, 31.2304, 121.4737)` |
 
 #### 特性
 - ✅ 使用Haversine公式计算距离
@@ -236,12 +244,19 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| `get()` | GET请求 | `Curl::get('https://api.example.com')->send()` |
-| `post()` | POST请求 | `Curl::post('https://api.example.com', $data)->send()` |
-| `put()` | PUT请求 | `Curl::put('https://api.example.com/1', $data)->send()` |
-| `delete()` | DELETE请求 | `Curl::delete('https://api.example.com/1')->send()` |
-| `timeout()` | 设置超时 | `Curl::get('https://api.example.com')->timeout(10)->send()` |
-| `header()` | 设置请求头 | `Curl::get('https://api.example.com')->header('X-Key', 'value')->send()` |
+| [`get()`](#get---get请求) | GET请求 | `Curl::get('https://api.example.com')->send()` |
+| [`post()`](#post---post请求) | POST请求 | `Curl::post('https://api.example.com', $data)->send()` |
+| [`put()`](#put---put请求) | PUT请求 | `Curl::put('https://api.example.com/1', $data)->send()` |
+| [`delete()`](#delete---delete请求) | DELETE请求 | `Curl::delete('https://api.example.com/1')->send()` |
+| [`patch()`](#patch---patch请求) | PATCH请求 | `Curl::patch('https://api.example.com/1', $data)->send()` |
+| [`head()`](#head---head请求) | HEAD请求 | `Curl::head('https://api.example.com')->send()` |
+| [`options()`](#options---options请求) | OPTIONS请求 | `Curl::options('https://api.example.com')->send()` |
+| [`multi()`](#multi---并发执行多个请求) | 并发请求 | `Curl::multi()->add()->execute()` |
+| [`retry()`](#retry---自动重试) | 自动重试 | `Curl::get()->retry(3, 2.0)` |
+| [`body()`](#body---获取原始响应体) | 获取响应体 | `$response->body()` |
+| [`json()`](#json---获取json解析结果) | 获取JSON | `$response->json()` |
+| [`header()`](#header---获取响应头) | 获取响应头 | `$response->header('Content-Type')` |
+| [`statusCode()`](#statuscode---获取响应状态码) | 获取状态码 | `$response->statusCode()` |
 
 #### 特性
 - ✅ 支持HTTP/HTTPS协议
@@ -267,12 +282,28 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| `text()` | 设置二维码内容 | `Qr::text('Hello World')` |
-| `size()` | 设置二维码大小 | `Qr::text('Hello')->size(300)` |
-| `errorCorrection()` | 设置错误纠正级别 | `Qr::text('Hello')->errorCorrection('H')` |
-| `logo()` | 添加Logo | `Qr::text('Hello')->logo('path/to/logo.png')` |
-| `toFile()` | 保存为文件 | `Qr::text('Hello')->toFile('qrcode.png')` |
-| `toBase64()` | 生成Base64编码 | `Qr::text('Hello')->toBase64()` |
+| [`create()`](#create---创建二维码) | 创建二维码 | `Qr::create('Hello World')` |
+| [`size()`](#size---设置二维码大小) | 设置大小 | `Qr::create('Hello')->size(300)` |
+| [`margin()`](#margin---设置边距) | 设置边距 | `Qr::create('Hello')->margin(20)` |
+| [`foregroundColor()`](#foregroundcolor---设置前景色) | 设置前景色 | `Qr::create('Hello')->foregroundColor(255, 0, 0)` |
+| [`backgroundColor()`](#backgroundcolor---设置背景色) | 设置背景色 | `Qr::create('Hello')->backgroundColor(255, 255, 255)` |
+| [`errorCorrectionLevel()`](#errorcorrectionlevel---设置错误纠正级别) | 设置错误纠正级别 | `Qr::create('Hello')->errorCorrectionLevel(5)` |
+| [`logo()`](#logo---添加logo) | 添加Logo | `Qr::create('Hello')->logo('path/to/logo.png')` |
+| [`label()`](#label---添加标签) | 添加标签 | `Qr::create('Hello')->label('标签文字')` |
+| [`save()`](#save---保存为png格式) | 保存为文件 | `Qr::create('Hello')->save('qrcode.png')` |
+| [`toString()`](#tostring---输出图片数据) | 输出图片数据 | `$qr->toString()` |
+| [`toDataUri()`](#todatauri---输出base64编码) | 生成Base64编码 | `$qr->toDataUri()` |
+| [`asSvg()`](#assvg---输出svg格式) | 输出SVG格式 | `Qr::create('Hello')->asSvg()` |
+| [`asWebP()`](#aswebp---输出webp格式) | 输出WebP格式 | `Qr::create('Hello')->asWebP()` |
+| [`asEps()`](#aseps---输出eps格式) | 输出EPS格式 | `Qr::create('Hello')->asEps()` |
+| [`url()`](#url---url二维码) | URL二维码 | `Qr::url('https://example.com')` |
+| [`wifi()`](#wifi---wifi二维码) | WiFi二维码 | `Qr::wifi('MyWiFi', 'password', 'wpa')` |
+| [`email()`](#email---邮件二维码) | 邮件二维码 | `Qr::email('user@example.com', '主题', '内容')` |
+| [`phone()`](#phone---电话二维码) | 电话二维码 | `Qr::phone('13800138000')` |
+| [`sms()`](#sms---短信二维码) | 短信二维码 | `Qr::sms('13800138000', '短信内容')` |
+| [`geo()`](#geo---位置二维码) | 位置二维码 | `Qr::geo(39.9042, 116.4074)` |
+| [`bitcoin()`](#bitcoin---比特币二维码) | 比特币二维码 | `Qr::bitcoin('address', 0.5)` |
+| [`event()`](#event---日历事件二维码) | 日历事件二维码 | `Qr::event('标题', '开始时间', '结束时间', '地点')` |
 
 #### 特性
 - ✅ 支持多种二维码大小
@@ -360,6 +391,8 @@ composer require kode/tools
 
 ### 树形结构转换
 
+#### tree() - 数组转树形结构
+
 ```php
 use Kode\Array\Arr;
 
@@ -397,8 +430,12 @@ $tree = Arr::tree($flatArray, 'id', 'parent_id', 'children');
 //     ]
 // ]
 
+#### list() - 树形结构转数组
+
 // 树形结构转数组
 $flat = Arr::list($tree, 'children');
+
+#### level() - 数组转层级结构
 
 // 数组转层级结构
 $level = Arr::level($flatArray, 'id', 'parent_id', 'level');
@@ -422,6 +459,8 @@ $path = Arr::path($flatArray, 'id', 'parent_id', 'name', 'path', '/');
 ```
 
 ### 数组访问和操作
+
+#### deepMerge() - 数组深度合并
 
 ```php
 use Kode\Array\Arr;
@@ -461,21 +500,31 @@ $merged = Arr::deepMerge($array1, $array2);
 //     ]
 // ]
 
+#### get() - 数组获取值（支持点语法）
+
 // 数组获取值（支持点语法）
 $value = Arr::get($array1, 'user.name'); // '张三'
 $value = Arr::get($array1, ['user', 'age']); // 25
 $value = Arr::get($array1, 'user.email', 'default@example.com'); // 'default@example.com'
 
+#### set() - 数组设置值
+
 // 数组设置值
 $result = Arr::set($array1, 'user.age', 26);
+
+#### has() - 数组判断是否存在键
 
 // 数组判断是否存在键
 $exists = Arr::has($array1, 'user.name'); // true
 $exists = Arr::has($array1, 'user.email'); // false
 
+#### only() - 数组仅保留指定键
+
 // 数组仅保留指定键
 $only = Arr::only($array1, ['user.name', 'user.age']);
 // 输出: ['user' => ['name' => '张三', 'age' => 25]]
+
+#### except() - 数组排除指定键
 
 // 数组排除指定键
 $except = Arr::except($array1, ['settings']);
@@ -483,6 +532,8 @@ $except = Arr::except($array1, ['settings']);
 ```
 
 ### 多维数组统计
+
+#### group() - 多维数组分组
 
 ```php
 use Kode\Array\Arr;
@@ -506,24 +557,36 @@ $grouped = Arr::group($flatArray, 'parent_id');
 //     2 => [['id' => 4, 'name' => '部门4', 'parent_id' => 2]]
 // ]
 
+#### count() - 多维数组统计
+
 // 多维数组统计
 $count = Arr::count($flatArray, 'parent_id');
 // 输出: [0 => 1, 1 => 2, 2 => 1]
 
+#### sum() - 多维数组求和
+
 // 多维数组求和
 $sum = Arr::sum($flatArray, 'id'); // 10
+
+#### avg() - 多维数组求平均值
 
 // 多维数组求平均值
 $avg = Arr::avg($flatArray, 'id'); // 2.5
 
+#### max() - 多维数组求最大值
+
 // 多维数组求最大值
 $max = Arr::max($flatArray, 'id'); // 4
+
+#### min() - 多维数组求最小值
 
 // 多维数组求最小值
 $min = Arr::min($flatArray, 'id'); // 1
 ```
 
 ### PHP 8.4+数组函数
+
+#### first() - 数组首元素
 
 ```php
 use Kode\Array\Arr;
@@ -532,21 +595,31 @@ use Kode\Array\Arr;
 $first = Arr::first([1, 2, 3, 4, 5]); // 1
 $first = Arr::first([]); // null
 
+#### last() - 数组尾元素
+
 // 数组尾元素（PHP 8.4+使用原生array_last）
 $last = Arr::last([1, 2, 3, 4, 5]); // 5
 $last = Arr::last([]); // null
+
+#### find() - 查找满足条件的元素
 
 // 查找满足条件的元素（PHP 8.4+使用原生array_find）
 $found = Arr::find([1, 2, 3, 4, 5], fn($n) => $n > 2); // 3
 $found = Arr::find([1, 2, 3, 4, 5], fn($n) => $n > 10); // null
 
+#### findKey() - 查找满足条件的键名
+
 // 查找满足条件的键名（PHP 8.4+使用原生array_find_key）
 $foundKey = Arr::findKey(['a' => 1, 'b' => 2, 'c' => 3], fn($n) => $n > 1); // 'b'
 $foundKey = Arr::findKey(['a' => 1, 'b' => 2, 'c' => 3], fn($n) => $n > 10); // null
 
+#### any() - 检查是否存在满足条件的元素
+
 // 检查是否存在满足条件的元素（PHP 8.4+使用原生array_any）
 $hasAny = Arr::any([1, 2, 3, 4, 5], fn($n) => $n > 3); // true
 $hasAny = Arr::any([1, 2, 3, 4, 5], fn($n) => $n > 10); // false
+
+#### all() - 检查是否所有元素都满足条件
 
 // 检查是否所有元素都满足条件（PHP 8.4+使用原生array_all）
 $allMatch = Arr::all([1, 2, 3, 4, 5], fn($n) => $n > 0); // true
@@ -787,6 +860,8 @@ $removed = Arr::removeKey(['a' => 1, 'b' => 2, 'c' => 3], 'b'); // ['a' => 1, 'c
 
 ### 字符串脱敏
 
+#### mask() - 字符串脱敏
+
 ```php
 use Kode\String\Str;
 
@@ -794,21 +869,31 @@ use Kode\String\Str;
 $masked = Str::mask('13800138000', 3, 4, '*'); // '138****8000'
 $masked = Str::mask('user@example.com', 2, 4, '*'); // 'us****@example.com'
 
+#### maskPhone() - 手机号脱敏
+
 // 手机号脱敏
 $phone = Str::maskPhone('13800138000'); // '138****8000'
 $phone = Str::maskPhone('13800138000', 3, 4); // '138****8000'
+
+#### maskEmail() - 邮箱脱敏
 
 // 邮箱脱敏
 $email = Str::maskEmail('user@example.com'); // 'us***@example.com'
 $email = Str::maskEmail('user@example.com', 2, 3); // 'us***@example.com'
 
+#### maskIdCard() - 身份证号脱敏
+
 // 身份证号脱敏
 $idCard = Str::maskIdCard('110101199001011234'); // '110101********1234'
 $idCard = Str::maskIdCard('110101199001011234', 6, 8); // '110101********1234'
 
+#### maskBankCard() - 银行卡号脱敏
+
 // 银行卡号脱敏
 $bankCard = Str::maskBankCard('6222021234567890123'); // '622202********0123'
 $bankCard = Str::maskBankCard('6222021234567890123', 6, 10); // '622202********0123'
+
+#### maskName() - 姓名脱敏
 
 // 姓名脱敏
 $name = Str::maskName('张三'); // '张*'
@@ -818,25 +903,35 @@ $name = Str::maskName('张三丰', 1, 1); // '张*丰'
 
 ### 字符串长度和截断
 
+#### length() - 字符串长度
+
 ```php
 use Kode\String\Str;
 
 // 字符串长度
 $length = Str::length('你好世界'); // 4（使用mb_strlen）
 
+#### truncate() - 字符串截断
+
 // 字符串截断
 $truncated = Str::truncate('这是一段很长的文本内容', 10); // '这是一段很长的文...'
 $truncated = Str::truncate('这是一段很长的文本内容', 10, '---'); // '这是一段很长的文---'
 
+#### limit() - 字符串限制长度
+
 // 字符串限制长度
 $limited = Str::limit('这是一段很长的文本内容', 10); // '这是一段很长的文...'
 $limited = Str::limit('短文本', 10); // '短文本'（不超过长度不截断）
+
+#### wordTruncate() - 字符串单词截断
 
 // 字符串单词截断
 $wordTruncate = Str::wordTruncate('This is a long text content', 10); // 'This is a...'
 ```
 
 ### 字符串命名转换
+
+#### snake() - 驼峰转下划线
 
 ```php
 use Kode\String\Str;
@@ -846,28 +941,44 @@ $snake = Str::snake('helloWorld'); // 'hello_world'
 $snake = Str::snake('HelloWorld'); // 'hello_world'
 $snake = Str::snake('HelloWorld', '-'); // 'hello-world'
 
+#### camel() - 下划线转驼峰
+
 // 下划线转驼峰
 $camel = Str::camel('hello_world'); // 'helloWorld'
 $camel = Str::camel('hello-world'); // 'helloWorld'
 $camel = Str::camel('hello_world', '-'); // 'helloWorld'
 
+#### ucfirst() - 首字母大写
+
 // 首字母大写
 $ucfirst = Str::ucfirst('hello'); // 'Hello'
+
+#### lcfirst() - 首字母小写
 
 // 首字母小写
 $lcfirst = Str::lcfirst('Hello'); // 'hello'
 
+#### ucwords() - 单词首字母大写
+
 // 单词首字母大写
 $ucwords = Str::ucwords('hello world'); // 'Hello World'
+
+#### upper() - 全部大写
 
 // 全部大写
 $upper = Str::upper('hello'); // 'HELLO'
 
+#### lower() - 全部小写
+
 // 全部小写
 $lower = Str::lower('HELLO'); // 'hello'
 
+#### swap() - 大小写转换
+
 // 大小写转换
 $swap = Str::swap('Hello'); // 'hELLO'
+
+#### title() - 标题格式
 
 // 标题格式
 $title = Str::title('hello world'); // 'Hello World'
@@ -1007,44 +1118,70 @@ $alpha = Str::alpha(8); // 8位随机字母字符串
 
 ### 字符串编码解码
 
+#### toBase64() - Base64编码
+
 ```php
 use Kode\String\Str;
 
 // Base64编码
 $base64 = Str::toBase64('hello'); // 'aGVsbG8='
 
+#### fromBase64() - Base64解码
+
 // Base64解码
 $decoded = Str::fromBase64('aGVsbG8='); // 'hello'
+
+#### toUrlEncode() - URL编码
 
 // URL编码
 $urlEncoded = Str::toUrlEncode('hello world'); // 'hello%20world'
 
+#### fromUrlEncode() - URL解码
+
 // URL解码
 $urlDecoded = Str::fromUrlEncode('hello%20world'); // 'hello world'
+
+#### toHtmlEntities() - HTML实体编码
 
 // HTML实体编码
 $htmlEncoded = Str::toHtmlEntities('<div>hello</div>'); // '&lt;div&gt;hello&lt;/div&gt;'
 
+#### fromHtmlEntities() - HTML实体解码
+
 // HTML实体解码
 $htmlDecoded = Str::fromHtmlEntities('&lt;div&gt;hello&lt;/div&gt;'); // '<div>hello</div>'
+
+#### toJson() - JSON编码
 
 // JSON编码
 $json = Str::toJson(['name' => '张三', 'age' => 25]); // '{"name":"张三","age":25}'
 
+#### fromJson() - JSON解码
+
 // JSON解码
 $decoded = Str::fromJson('{"name":"张三","age":25}'); // ['name' => '张三', 'age' => 25]
+
+#### toXml() - XML编码
 
 // XML编码
 $xml = Str::toXml(['name' => '张三', 'age' => 25], 'root'); // '<root><name>张三</name><age>25</age></root>'
 
+#### fromXml() - XML解码
+
 // XML解码
 $decoded = Str::fromXml('<root><name>张三</name><age>25</age></root>'); // ['name' => '张三', 'age' => 25]
+
+#### toBinary() - 二进制编码
 
 // 二进制编码
 $binary = Str::toBinary('hello'); // '0110100001100101011011000110110001101111'
 
+#### fromBinary() - 二进制解码
+
 // 二进制解码
 $decoded = Str::fromBinary('0110100001100101011011000110110001101111'); // 'hello'
+
+#### toHex() - 十六进制编码
 
 // 十六进制编码
 $hex = Str::toHex('hello'); // '68656c6c6f'
@@ -1277,6 +1414,8 @@ $distance = Str::distance('hello', 'world'); // 4（编辑距离）
 
 ### 时间格式化
 
+#### format() - 格式化时间
+
 ```php
 use Kode\Time\Time;
 
@@ -1285,18 +1424,26 @@ $formatted = Time::format(time(), 'Y-m-d H:i:s'); // '2025-12-26 12:00:00'
 $formatted = Time::format(time(), 'Y年m月d日'); // '2025年12月26日'
 $formatted = Time::format(1735200000, 'Y-m-d'); // '2025-12-26'
 
+#### now() - 获取当前时间
+
 // 获取当前时间
 $now = Time::now(); // '2025-12-26 12:00:00'
 $now = Time::now('Y-m-d'); // '2025-12-26'
 $now = Time::now('H:i:s'); // '12:00:00'
 
+#### today() - 获取今天日期
+
 // 获取今天日期
 $today = Time::today(); // '2025-12-26'
 $today = Time::today('Y-m-d H:i:s'); // '2025-12-26 00:00:00'
 
+#### yesterday() - 获取昨天日期
+
 // 获取昨天日期
 $yesterday = Time::yesterday(); // '2025-12-25'
 $yesterday = Time::yesterday('Y-m-d H:i:s'); // '2025-12-25 00:00:00'
+
+#### tomorrow() - 获取明天日期
 
 // 获取明天日期
 $tomorrow = Time::tomorrow(); // '2025-12-27'
@@ -1304,6 +1451,8 @@ $tomorrow = Time::tomorrow('Y-m-d H:i:s'); // '2025-12-27 00:00:00'
 ```
 
 ### 时间计算
+
+#### add() - 时间加法
 
 ```php
 use Kode\Time\Time;
@@ -1315,14 +1464,20 @@ $newTime = Time::add($timestamp, 3600); // 加1小时
 $newTime = Time::add($timestamp, 86400); // 加1天
 $newTime = Time::add($timestamp, 604800); // 加1周
 
+#### sub() - 时间减法
+
 // 时间减法
 $newTime = Time::sub($timestamp, 3600); // 减1小时
 $newTime = Time::sub($timestamp, 86400); // 减1天
 $newTime = Time::sub($timestamp, 604800); // 减1周
 
+#### diff() - 时间差
+
 // 时间差
 $diff = Time::diff(time(), time() - 3600); // 3600（秒）
 $diff = Time::diff(time() - 86400, time()); // 86400（秒）
+
+#### diffForHumans() - 人性化时间差
 
 // 人性化时间差
 $human = Time::diffForHumans(time() - 60); // '1分钟前'
@@ -1339,6 +1494,8 @@ $human = Time::diffForHumans(time() - 3600, time() - 7200); // '1小时前'
 
 ### 周日期范围
 
+#### weekStart() - 获取本周开始时间
+
 ```php
 use Kode\Time\Time;
 
@@ -1347,14 +1504,20 @@ $weekStart = Time::weekStart(); // 本周一00:00:00的时间戳
 $weekStart = Time::weekStart(time()); // 指定时间所在周的开始时间
 $weekStartFormatted = Time::format(Time::weekStart(), 'Y-m-d H:i:s'); // '2025-12-22 00:00:00'
 
+#### weekEnd() - 获取本周结束时间
+
 // 获取本周结束时间
 $weekEnd = Time::weekEnd(); // 本周日23:59:59的时间戳
 $weekEnd = Time::weekEnd(time()); // 指定时间所在周的结束时间
 $weekEndFormatted = Time::format(Time::weekEnd(), 'Y-m-d H:i:s'); // '2025-12-28 23:59:59'
 
+#### lastWeekStart() - 获取上周开始时间
+
 // 获取上周开始时间
 $lastWeekStart = Time::lastWeekStart(); // 上周一00:00:00的时间戳
 $lastWeekStartFormatted = Time::format(Time::lastWeekStart(), 'Y-m-d H:i:s'); // '2025-12-15 00:00:00'
+
+#### lastWeekEnd() - 获取上周结束时间
 
 // 获取上周结束时间
 $lastWeekEnd = Time::lastWeekEnd(); // 上周日23:59:59的时间戳
@@ -1362,6 +1525,8 @@ $lastWeekEndFormatted = Time::format(Time::lastWeekEnd(), 'Y-m-d H:i:s'); // '20
 ```
 
 ### 月日期范围
+
+#### monthStart() - 获取本月开始时间
 
 ```php
 use Kode\Time\Time;
@@ -1371,14 +1536,20 @@ $monthStart = Time::monthStart(); // 本月1日00:00:00的时间戳
 $monthStart = Time::monthStart(time()); // 指定时间所在月的开始时间
 $monthStartFormatted = Time::format(Time::monthStart(), 'Y-m-d H:i:s'); // '2025-12-01 00:00:00'
 
+#### monthEnd() - 获取本月结束时间
+
 // 获取本月结束时间
 $monthEnd = Time::monthEnd(); // 本月最后一天23:59:59的时间戳
 $monthEnd = Time::monthEnd(time()); // 指定时间所在月的结束时间
 $monthEndFormatted = Time::format(Time::monthEnd(), 'Y-m-d H:i:s'); // '2025-12-31 23:59:59'
 
+#### lastMonthStart() - 获取上月开始时间
+
 // 获取上月开始时间
 $lastMonthStart = Time::lastMonthStart(); // 上月1日00:00:00的时间戳
 $lastMonthStartFormatted = Time::format(Time::lastMonthStart(), 'Y-m-d H:i:s'); // '2025-11-01 00:00:00'
+
+#### lastMonthEnd() - 获取上月结束时间
 
 // 获取上月结束时间
 $lastMonthEnd = Time::lastMonthEnd(); // 上月最后一天23:59:59的时间戳
@@ -1591,20 +1762,36 @@ $duration = $endTime - $startTime; // 微秒
 
 ## 加解密模块使用示例
 
+#### cryptoMd5() - MD5加密（支持加盐）
+
 ```php
 use Kode\Crypto\Crypto;
 
 // MD5加密（支持加盐）
 $md5 = Crypto::cryptoMd5('123456', 'salt123');
 
+#### cryptoPasswordHash() - 密码哈希
+
 // 密码哈希
 $hash = Crypto::cryptoPasswordHash('123456');
+
+#### cryptoPasswordVerify() - 密码验证
+
+// 密码验证
 $verify = Crypto::cryptoPasswordVerify('123456', $hash); // true
+
+#### cryptoSslEncrypt() - SSL对称加密
 
 // SSL对称加密
 $key = '1234567890abcdef';
 $encrypt = Crypto::cryptoSslEncrypt('敏感数据', $key);
+
+#### cryptoSslDecrypt() - SSL对称解密
+
+// SSL对称解密
 $decrypt = Crypto::cryptoSslDecrypt($encrypt, $key); // '敏感数据'
+
+#### cryptoHmac() - HMAC签名
 
 // HMAC签名
 $hmac = Crypto::cryptoHmac('数据', 'key', 'sha256');
@@ -1632,6 +1819,8 @@ $registerCode = Generate::registerCode(12, 4); // 12位注册码，每4位分隔
 
 ### 基础运算
 
+#### add() - 高精度加法
+
 ```php
 use Kode\Math\Math;
 
@@ -1639,25 +1828,37 @@ use Kode\Math\Math;
 $sum = Math::add(0.1, 0.2); // 0.3（而不是0.30000000000000004）
 $sum = Math::add('1.1', '2.2', 2); // 3.30（保留2位小数）
 
+#### sub() - 高精度减法
+
 // 高精度减法
 $diff = Math::sub(0.3, 0.1); // 0.2
 $diff = Math::sub('5.5', '2.2', 2); // 3.30
+
+#### mul() - 高精度乘法
 
 // 高精度乘法
 $product = Math::mul(0.1, 0.2); // 0.02
 $product = Math::mul('1.5', '2.5', 2); // 3.75
 
+#### div() - 高精度除法
+
 // 高精度除法
 $quotient = Math::div(0.3, 0.1); // 3
 $quotient = Math::div('10', '3', 2); // 3.33
+
+#### mod() - 取模运算
 
 // 取模运算
 $mod = Math::mod(10, 3); // 1
 $mod = Math::mod('10.5', '3'); // 1.5
 
+#### pow() - 幂运算
+
 // 幂运算
 $pow = Math::pow(2, 10); // 1024
 $pow = Math::pow('2.5', 3, 2); // 15.62
+
+#### sqrt() - 平方根运算
 
 // 平方根运算
 $sqrt = Math::sqrt(16); // 4
@@ -1666,15 +1867,21 @@ $sqrt = Math::sqrt('2', 4); // 1.4142
 
 ### 取整运算
 
+#### round() - 四舍五入
+
 ```php
 // 四舍五入
 $rounded = Math::round(3.14159, 2); // 3.14
 $rounded = Math::round(3.5, 0); // 4
 
+#### ceil() - 向上取整
+
 // 向上取整
 $ceil = Math::ceil(3.2); // 4
 $ceil = Math::ceil(3.8, 1); // 3.8
 $ceil = Math::ceil('3.21', 1); // 3.3
+
+#### floor() - 向下取整
 
 // 向下取整
 $floor = Math::floor(3.8); // 3
@@ -1783,30 +1990,44 @@ $lcm = Math::lcm(3, 5); // 15
 
 ### 金融计算
 
+#### percentage() - 百分比计算
+
 ```php
 // 百分比计算
 $percentage = Math::percentage(25, 100); // 25（25占100的25%）
 $percentage = Math::percentage('30', '150', 2); // 20.00
 
+#### discount() - 折扣计算
+
 // 折扣计算
 $discounted = Math::discount(100, 0.8); // 80（打8折）
 $discounted = Math::discount('200', '0.7', 2); // 140.00（打7折）
+
+#### tax() - 税费计算
 
 // 税费计算
 $tax = Math::tax(100, 0.1); // 10（100的10%税额）
 $tax = Math::tax('500', '0.13', 2); // 65.00（500的13%税额）
 
+#### taxIncluded() - 含税金额计算
+
 // 含税金额计算
 $taxIncluded = Math::taxIncluded(100, 0.1); // 110（100 + 10%税）
 $taxIncluded = Math::taxIncluded('500', '0.13', 2); // 565.00
+
+#### taxExcluded() - 不含税金额计算
 
 // 不含税金额计算
 $taxExcluded = Math::taxExcluded(110, 0.1); // 100（110 / 1.1）
 $taxExcluded = Math::taxExcluded('565', '0.13', 2); // 500.00
 
+#### simpleInterest() - 简单利息计算
+
 // 简单利息计算
 $simpleInterest = Math::simpleInterest(1000, 0.05, 2); // 100（1000本金，5%年利率，2年）
 $simpleInterest = Math::simpleInterest('5000', '0.04', 3, 2); // 600.00
+
+#### compoundInterest() - 复利计算
 
 // 复利计算
 $compoundInterest = Math::compoundInterest(1000, 0.05, 2); // 1102.5（1000本金，5%年利率，2年复利）
@@ -1942,17 +2163,25 @@ $formatted = Math::format($amount, 2, true); // 1,234,567.89
 
 ## 地理位置模块使用示例
 
+#### distance() - 计算两个坐标之间的距离
+
 ```php
 use Kode\Geo\Geo;
 
 // 计算两个坐标之间的距离
 $distance = Geo::distance(39.9042, 116.4074, 31.2304, 121.4737, 'km'); // 北京到上海的距离，约1067公里
 
+#### isValidCoordinate() - 坐标验证
+
 // 坐标验证
 $valid = Geo::isValidCoordinate(39.9042, 116.4074); // true
 
+#### wgs84ToGcj02() - 坐标转换（WGS84转GCJ02）
+
 // 坐标转换（WGS84转GCJ02）
 $gcj02 = Geo::wgs84ToGcj02(39.9042, 116.4074);
+
+#### gcj02ToBd09() - 坐标转换（GCJ02转BD09）
 
 // 坐标转换（GCJ02转BD09）
 $bd09 = Geo::gcj02ToBd09($gcj02[0], $gcj02[1]);
@@ -1982,6 +2211,8 @@ $ipStr = Ip::toString(3232235777); // '192.168.1.1'
 消息体模块提供了完整的API响应构建能力，支持双模式链式调用（实例链式 + 静态链式）、灵活的状态码管理、自定义字段扩展和字段映射功能。
 
 ### 基础使用示例
+
+#### code() - 设置状态码
 
 ```php
 use Kode\Message\Message;
@@ -2100,6 +2331,8 @@ $res = Message::code(500002)->msg('缓存服务不可用')->result();
 
 ### 自定义状态码映射
 
+#### setCodeMap() - 全局设置状态码映射
+
 用户可以动态覆盖或新增状态码映射，满足业务特定需求。
 
 ```php
@@ -2125,6 +2358,8 @@ $res = Message::code(800001)->result();
 $res = Message::code(900000)->result();
 // ['code' => 900000, 'msg' => '权限不足']
 
+#### setCustomCodes() - 实例级设置状态码映射
+
 // 方式二：实例级设置状态码映射
 $msg = new Message();
 $msg->setCustomCodes([
@@ -2136,6 +2371,8 @@ $msg->setCustomCodes([
 $res = $msg->code(700001)->result();
 // ['code' => 700001, 'msg' => '商品库存不足']
 
+#### addCode() - 动态添加单个状态码
+
 // 方式三：动态添加单个状态码
 $msg = new Message();
 $msg->addCode(600001, '验证码错误')
@@ -2146,11 +2383,15 @@ $msg->addCode(600001, '验证码错误')
 $res = $msg->code(600001)->result();
 // ['code' => 600001, 'msg' => '验证码错误']
 
+#### getCodeMsg() - 获取状态码对应的消息
+
 // 获取状态码对应的消息
 $msg = new Message();
 $message = $msg->getCodeMsg(300000); // 'Token失效'
 $message = $msg->getCodeMsg(400001); // '用户不存在'
 $message = $msg->getCodeMsg(999999); // null（未定义的状态码）
+
+#### codeExists() - 检查状态码是否存在
 
 // 检查状态码是否存在
 $exists = $msg->codeExists(200); // true
@@ -2159,6 +2400,8 @@ $exists = $msg->codeExists(999999); // false
 ```
 
 ### 动态字段扩展
+
+#### 动态字段扩展
 
 消息体模块支持任意动态字段扩展，通过`__call`魔术方法实现灵活的属性设置。
 
@@ -2185,6 +2428,8 @@ $res = $msg->page(['page' => 1, 'size' => 10, 'total' => 100])
 //     'page_size' => 10
 // ]
 
+#### addFields() - 批量添加扩展字段
+
 // 批量添加扩展字段
 $msg = new Message(200, 'success');
 $res = $msg->addFields([
@@ -2204,6 +2449,8 @@ $res = $msg->addFields([
 //     'operator' => 'admin',
 //     'source' => 'web'
 // ]
+
+#### 复杂数据结构扩展
 
 // 复杂数据结构扩展
 $msg = new Message(200, 'success');
@@ -2235,6 +2482,8 @@ $res = $msg->user_info([
 
 ### 字段映射与转换
 
+#### setGlobalFieldMap() - 全局字段映射设置
+
 支持自定义字段映射，满足不同项目或前端框架的命名规范。
 
 ```php
@@ -2263,6 +2512,8 @@ $res = Message::code(200)
 //     'pagination' => ['page' => 1]
 // ]
 
+#### fieldMap() - 实例级字段映射
+
 // 实例级字段映射（覆盖全局设置）
 $msg = new Message();
 $res = $msg->fieldMap([
@@ -2282,6 +2533,8 @@ $res = $msg->fieldMap([
 //     'result' => ['list' => [1, 2, 3]]
 // ]
 
+#### 局部字段映射
+
 // 局部字段映射（在result方法中传入）
 $msg = new Message(200, 'success');
 $res = $msg->data(['id' => 123])
@@ -2298,6 +2551,8 @@ $res = $msg->data(['id' => 123])
 ```
 
 ### JSON输出
+
+#### json() - 基本JSON输出
 
 支持直接输出JSON格式响应。
 
@@ -2583,6 +2838,8 @@ HTTP请求模块提供了完整的HTTP客户端功能，支持多种HTTP方法�
 
 ### 基础使用示例
 
+#### get() - GET请求
+
 ```php
 use Kode\Curl\Curl;
 
@@ -2590,6 +2847,8 @@ use Kode\Curl\Curl;
 $response = Curl::get('https://api.example.com/users');
 echo $response->body();
 echo $response->json('data');
+
+#### post() - POST请求
 
 // POST请求（JSON）
 $response = Curl::post('https://api.example.com/users', [
@@ -2612,6 +2871,8 @@ $response = Curl::post('https://api.example.com/upload', [
 
 ### 多种HTTP方法
 
+#### put() - PUT请求
+
 ```php
 use Kode\Curl\Curl;
 
@@ -2621,19 +2882,27 @@ $response = Curl::put('https://api.example.com/users/1', [
 ]);
 echo $response->json();
 
+#### patch() - PATCH请求
+
 // PATCH请求
 $response = Curl::patch('https://api.example.com/users/1', [
     'status' => 'active'
 ]);
 echo $response->json();
 
+#### delete() - DELETE请求
+
 // DELETE请求
 $response = Curl::delete('https://api.example.com/users/1');
 echo $response->json();
 
+#### head() - HEAD请求
+
 // HEAD请求（仅获取响应头）
 $response = Curl::head('https://api.example.com/users');
 echo $response->header('Content-Type');
+
+#### options() - OPTIONS请求
 
 // OPTIONS请求
 $response = Curl::options('https://api.example.com/users');
@@ -2641,6 +2910,8 @@ echo $response->header('Allow');
 ```
 
 ### 请求配置选项
+
+#### 请求头设置
 
 ```php
 use Kode\Curl\Curl;
@@ -2652,25 +2923,37 @@ $response = Curl::get('https://api.example.com/users', [
 ]);
 echo $response->json();
 
+#### 超时时间设置
+
 // 设置超时时间
 $response = Curl::get('https://api.example.com/users', timeout: 30);
 echo $response->json();
+
+#### 用户代理设置
 
 // 设置用户代理
 $response = Curl::get('https://api.example.com/users', userAgent: 'MyApp/1.0');
 echo $response->json();
 
+#### 来源页面设置
+
 // 设置来源页面
 $response = Curl::get('https://api.example.com/users', referer: 'https://example.com');
 echo $response->json();
+
+#### Cookie设置
 
 // 设置Cookie
 $response = Curl::get('https://api.example.com/users', cookie: 'session=abc123');
 echo $response->json();
 
+#### SSL验证设置
+
 // 禁用SSL验证（仅测试环境）
 $response = Curl::get('https://api.example.com/users', verifySsl: false);
 echo $response->json();
+
+#### 代理设置
 
 // 设置代理
 $response = Curl::get('https://api.example.com/users', proxy: 'http://proxy.example.com:8080');
@@ -2683,6 +2966,8 @@ echo $response->json();
 
 ### 响应处理
 
+#### body() - 获取原始响应体
+
 ```php
 use Kode\Curl\Curl;
 
@@ -2691,38 +2976,56 @@ $response = Curl::get('https://api.example.com/users');
 // 获取原始响应体
 echo $response->body();
 
+#### json() - 获取JSON解析结果
+
 // 获取JSON解析结果
 $data = $response->json();
 echo $data['name'];
+
+#### jsonArray() - 获取数组格式的JSON
 
 // 获取数组格式的JSON
 $array = $response->jsonArray();
 echo $array[0]['name'];
 
+#### statusCode() - 获取响应状态码
+
 // 获取响应状态码
 $statusCode = $response->statusCode();
 echo $statusCode; // 200
+
+#### header() - 获取响应头
 
 // 获取响应头
 $contentType = $response->header('Content-Type');
 echo $contentType; // 'application/json'
 
+#### headers() - 获取所有响应头
+
 // 获取所有响应头
 $headers = $response->headers();
 print_r($headers);
+
+#### time() - 获取响应时间
 
 // 获取响应时间（毫秒）
 $time = $response->time();
 echo $time; // 125.5
 
+#### responseInfo() - 获取原始响应头信息
+
 // 获取原始响应头信息
 $responseInfo = $response->responseInfo();
 print_r($responseInfo);
+
+#### isSuccess() - 判断是否成功
 
 // 判断是否成功
 if ($response->isSuccess()) {
     echo '请求成功';
 }
+
+#### isRedirect() - 判断是否重定向
 
 // 判断是否重定向
 if ($response->isRedirect()) {
@@ -2731,6 +3034,8 @@ if ($response->isRedirect()) {
 ```
 
 ### 错误处理
+
+#### isClientError() - 判断是否为客户端错误
 
 ```php
 use Kode\Curl\Curl;
@@ -2750,6 +3055,8 @@ try {
         );
     }
     
+#### isServerError() - 判断是否为服务器错误
+
     // 5xx服务器错误
     if ($response->isServerError()) {
         throw new ServerException(
@@ -2786,6 +3093,8 @@ try {
 
 ### 重试机制
 
+#### retry() - 自动重试
+
 ```php
 use Kode\Curl\Curl;
 
@@ -2806,6 +3115,8 @@ echo $response->json();
 
 ### 并发请求
 
+#### multi() - 并发执行多个请求
+
 ```php
 use Kode\Curl\Curl;
 
@@ -2824,6 +3135,8 @@ $comments = $responses['https://api.example.com/comments']->json();
 print_r($users);
 print_r($posts);
 print_r($comments);
+
+#### add() - 添加并发请求
 
 // 带配置的并发请求
 $responses = Curl::multi()
@@ -2844,6 +3157,8 @@ $responses = Curl::multi()
 ```
 
 ### PHP 8.5+持久化句柄支持
+
+#### sharePersistent() - 共享持久化句柄
 
 ```php
 use Kode\Curl\Curl;
@@ -2866,6 +3181,8 @@ echo $response->json();
 
 ### 高级配置示例
 
+#### 上传文件
+
 ```php
 use Kode\Curl\Curl;
 
@@ -2877,6 +3194,8 @@ $response = Curl::post('https://api.example.com/upload', [
 
 echo $response->json();
 
+#### 下载文件
+
 // 下载文件
 $response = Curl::get('https://api.example.com/file.zip', saveTo: '/path/to/file.zip');
 
@@ -2884,12 +3203,16 @@ if ($response->isSuccess()) {
     echo '文件下载成功';
 }
 
+#### 发送JSON数据
+
 // 发送JSON数据
 $response = Curl::post('https://api.example.com/api', [
     'key' => 'value'
 ], 'json');
 
 echo $response->json();
+
+#### 自定义请求
 
 // 自定义请求
 $response = Curl::request('DELETE', 'https://api.example.com/users/1', [
@@ -2905,6 +3228,8 @@ echo $response->json();
 
 ### 基础使用示例
 
+#### create() - 创建二维码
+
 ```php
 use Kode\Qrcode\Qr;
 
@@ -2912,14 +3237,20 @@ use Kode\Qrcode\Qr;
 $qr = Qr::create('https://example.com');
 $qr->save('/path/to/qrcode.png');
 
+#### toString() - 输出图片数据
+
 // 直接输出图片数据
 $imageData = $qr->toString();
 header('Content-Type: image/png');
 echo $imageData;
 
+#### toDataUri() - 输出Base64编码
+
 // 直接输出Base64编码
 $base64 = $qr->toDataUri();
 echo "<img src='{$base64}' />";
+
+#### build() - 获取原始对象
 
 // 获取二维码原始对象（用于进一步自定义）
 $qrCode = Qr::create('https://example.com');
@@ -2927,6 +3258,8 @@ $builder = $qrCode->build();
 ```
 
 ### 样式定制
+
+#### size() - 设置二维码大小
 
 ```php
 use Kode\Qrcode\Qr;
@@ -2936,16 +3269,22 @@ $qr = Qr::create('https://example.com')
         ->size(500)
         ->save('/path/to/qrcode.png');
 
+#### margin() - 设置边距
+
 // 设置边距
 $qr = Qr::create('https://example.com')
         ->size(300)
         ->margin(20)
         ->save('/path/to/qrcode.png');
 
+#### foregroundColor() - 设置前景色
+
 // 设置前景色（RGB）
 $qr = Qr::create('https://example.com')
         ->foregroundColor(255, 0, 0) // 红色
         ->save('/path/to/qrcode.png');
+
+#### backgroundColor() - 设置背景色
 
 // 设置背景色（RGB）
 $qr = Qr::create('https://example.com')
@@ -2958,20 +3297,28 @@ $qr = Qr::create('https://example.com')
         ->backgroundColor(255, 255, 255) // 白色背景
         ->save('/path/to/qrcode.png');
 
+#### errorCorrectionLevel() - 设置错误纠正级别
+
 // 设置错误纠正级别（1-5，对应L/M/Q/H级别）
 $qr = Qr::create('https://example.com')
         ->errorCorrectionLevel(5) // 最高级别H，可修复30%错误
         ->save('/path/to/qrcode.png');
+
+#### roundDots() - 圆角点样式
 
 // 圆角点样式
 $qr = Qr::create('https://example.com')
         ->roundDots(true) // 启用圆角点
         ->save('/path/to/qrcode.png');
 
+#### circularDots() - 圆形点样式
+
 // 圆形点样式（带大小控制）
 $qr = Qr::create('https://example.com')
         ->circularDots(true, 12) // 启用圆形点，尺寸比例12
         ->save('/path/to/qrcode.png');
+
+#### gradient() - 渐变颜色
 
 // 渐变颜色
 $qr = Qr::create('https://example.com')
@@ -2994,6 +3341,8 @@ $qr = Qr::create('https://example.com')
 ```
 
 ### Logo嵌入
+
+#### logo() - 添加Logo
 
 ```php
 use Kode\Qrcode\Qr;
@@ -3028,6 +3377,8 @@ $qr = Qr::create('https://example.com')
 
 ### 标签文字
 
+#### label() - 添加标签
+
 ```php
 use Kode\Qrcode\Qr;
 
@@ -3055,6 +3406,8 @@ $qr = Qr::create('https://example.com')
 
 ### 多种输出格式
 
+#### save() - 保存为PNG格式
+
 ```php
 use Kode\Qrcode\Qr;
 
@@ -3063,11 +3416,15 @@ $qr = Qr::create('https://example.com');
 $qr->save('/path/to/qrcode.png');
 $pngData = $qr->toString(); // PNG二进制数据
 
+#### asSvg() - 输出SVG格式
+
 // SVG格式（矢量图，无限放大不失真）
 $qr = Qr::create('https://example.com')
         ->asSvg() // 设置为SVG格式
         ->save('/path/to/qrcode.svg');
 $svgData = $qr->toString(); // SVG字符串数据
+
+#### asWebP() - 输出WebP格式
 
 // WebP格式（现代图片格式，更小体积）
 $qr = Qr::create('https://example.com')
@@ -3075,11 +3432,15 @@ $qr = Qr::create('https://example.com')
         ->save('/path/to/qrcode.webp');
 $webpData = $qr->toString(); // WebP二进制数据
 
+#### asEps() - 输出EPS格式
+
 // EPS格式（印刷级矢量格式）
 $qr = Qr::create('https://example.com')
         ->asEps()
         ->save('/path/to/qrcode.eps');
 $epsData = $qr->toString(); // EPS字符串数据
+
+#### toDataUri() - 输出Data URI
 
 // 输出Data URI
 $qr = Qr::create('https://example.com');
@@ -3095,6 +3456,8 @@ echo "<img src='{$dataUri}' />";
 
 ### 多种数据类型支持
 
+#### url() - URL二维码
+
 ```php
 use Kode\Qrcode\Qr;
 
@@ -3102,6 +3465,8 @@ use Kode\Qrcode\Qr;
 $qr = Qr::url('https://example.com')
         ->size(300)
         ->save('/path/to/url_qr.png');
+
+#### wifi() - WiFi二维码
 
 // WiFi二维码
 $qr = Qr::wifi('MyWiFi', 'password123', 'wpa') // WiFi名、密码、加密类型
@@ -3113,30 +3478,42 @@ $qr = Qr::wifi('MyWiFi', 'password123', 'wpa', true) // true表示隐藏网络
         ->size(300)
         ->save('/path/to/wifi_hidden_qr.png');
 
+#### email() - 邮件二维码
+
 // 邮件二维码
 $qr = Qr::email('user@example.com', '主题', '内容')
         ->size(300)
         ->save('/path_to/email_qr.png');
+
+#### phone() - 电话二维码
 
 // 电话二维码
 $qr = Qr::phone('13800138000')
         ->size(300)
         ->save('/path/to/phone_qr.png');
 
+#### sms() - 短信二维码
+
 // 短信二维码
 $qr = Qr::sms('13800138000', '您好，这是测试短信')
         ->size(300)
         ->save('/path/to/sms_qr.png');
+
+#### geo() - 位置二维码
 
 // 位置二维码
 $qr = Qr::geo(39.9042, 116.4074) // 经度、纬度
         ->size(300)
         ->save('/path/to/geo_qr.png');
 
+#### bitcoin() - 比特币二维码
+
 // 比特币二维码
 $qr = Qr::bitcoin('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 0.5) // 地址、金额（BTC）
         ->size(300)
         ->save('/path/to/bitcoin_qr.png');
+
+#### event() - 日历事件二维码
 
 // 日历事件二维码
 $qr = Qr::event(
