@@ -78,12 +78,12 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| [`first()`](#first) | 获取第一个元素 | `Arr::first([1, 2, 3])` |
-| [`last()`](#last) | 获取最后一个元素 | `Arr::last([1, 2, 3])` |
-| [`find()`](#find) | 查找满足条件的元素 | `Arr::find([1, 2, 3], fn($n) => $n > 1)` |
-| [`tree()`](#tree) | 数组转树形结构 | `Arr::tree($list, 'id', 'pid')` |
-| [`list()`](#list) | 树形结构转数组 | `Arr::list($tree)` |
-| [`deepMerge()`](#deepmerge) | 深度合并数组 | `Arr::deepMerge($arr1, $arr2)` |
+| `first()` | 获取第一个元素 | `Arr::first([1, 2, 3])` |
+| `last()` | 获取最后一个元素 | `Arr::last([1, 2, 3])` |
+| `find()` | 查找满足条件的元素 | `Arr::find([1, 2, 3], fn($n) => $n > 1)` |
+| `tree()` | 数组转树形结构 | `Arr::tree($list, 'id', 'pid')` |
+| `list()` | 树形结构转数组 | `Arr::list($tree)` |
+| `deepMerge()` | 深度合并数组 | `Arr::deepMerge($arr1, $arr2)` |
 
 #### 特性
 - ✅ 树形结构转换（数组转树、树转数组）
@@ -103,12 +103,12 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| [`maskPhone()`](#maskphone) | 手机号脱敏 | `Str::maskPhone('13800138000')` |
-| [`maskEmail()`](#maskemail) | 邮箱脱敏 | `Str::maskEmail('user@example.com')` |
-| [`camel()`](#camel) | 转驼峰命名 | `Str::camel('hello_world')` |
-| [`snake()`](#snake) | 转蛇形命名 | `Str::snake('helloWorld')` |
-| [`toBase64()`](#tobase64) | 转Base64编码 | `Str::toBase64('hello')` |
-| [`fromBase64()`](#frombase64) | Base64解码 | `Str::fromBase64('aGVsbG8=')` |
+| `maskPhone()` | 手机号脱敏 | `Str::maskPhone('13800138000')` |
+| `maskEmail()` | 邮箱脱敏 | `Str::maskEmail('user@example.com')` |
+| `camel()` | 转驼峰命名 | `Str::camel('hello_world')` |
+| `snake()` | 转蛇形命名 | `Str::snake('helloWorld')` |
+| `toBase64()` | 转Base64编码 | `Str::toBase64('hello')` |
+| `fromBase64()` | Base64解码 | `Str::fromBase64('aGVsbG8=')` |
 
 #### 特性
 - ✅ 随机字符串生成
@@ -129,11 +129,11 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| [`human()`](#human) | 人性化时间显示 | `Time::human('2024-01-01')` |
-| [`diff()`](#diff) | 时间差（秒） | `Time::diff('2024-01-01')` |
-| [`today()`](#today) | 今天开始时间 | `Time::today()` |
-| [`thisWeek()`](#thisweek) | 本周时间范围 | `Time::thisWeek()` |
-| [`thisMonth()`](#thismonth) | 本月时间范围 | `Time::thisMonth()` |
+| `human()` | 人性化时间显示 | `Time::human('2024-01-01')` |
+| `diff()` | 时间差（秒） | `Time::diff('2024-01-01')` |
+| `today()` | 今天开始时间 | `Time::today()` |
+| `thisWeek()` | 本周时间范围 | `Time::thisWeek()` |
+| `thisMonth()` | 本月时间范围 | `Time::thisMonth()` |
 
 #### 特性
 - ✅ 时间格式化
@@ -148,11 +148,11 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| [`cryptoMd5()`](#cryptomd5) | MD5加密（支持加盐） | `Crypto::cryptoMd5('123456', 'salt')` |
-| [`cryptoPasswordHash()`](#cryptopasswordhash) | 密码哈希 | `Crypto::cryptoPasswordHash('123456')` |
-| [`cryptoPasswordVerify()`](#cryptopasswordverify) | 密码验证 | `Crypto::cryptoPasswordVerify('123456', $hash)` |
-| [`cryptoSslEncrypt()`](#cryptosslencrypt) | SSL对称加密 | `Crypto::cryptoSslEncrypt('data', $key)` |
-| [`cryptoSslDecrypt()`](#cryptossldecrypt) | SSL对称解密 | `Crypto::cryptoSslDecrypt($encrypted, $key)` |
+| `cryptoMd5()` | MD5加密（支持加盐） | `Crypto::cryptoMd5('123456', 'salt')` |
+| `cryptoPasswordHash()` | 密码哈希 | `Crypto::cryptoPasswordHash('123456')` |
+| `cryptoPasswordVerify()` | 密码验证 | `Crypto::cryptoPasswordVerify('123456', $hash)` |
+| `cryptoSslEncrypt()` | SSL对称加密 | `Crypto::cryptoSslEncrypt('data', $key)` |
+| `cryptoSslDecrypt()` | SSL对称解密 | `Crypto::cryptoSslDecrypt($encrypted, $key)` |
 
 #### 特性
 - ✅ MD5加密（支持加盐）
@@ -176,14 +176,14 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| [`add()`](#add) | 高精度加法 | `Math::add('1.1', '2.2')` |
-| [`sub()`](#sub) | 高精度减法 | `Math::sub('3.3', '1.1')` |
-| [`mul()`](#mul) | 高精度乘法 | `Math::mul('2.5', '4')` |
-| [`div()`](#div) | 高精度除法 | `Math::div('10', '3')` |
-| [`avg()`](#avg) | 平均数 | `Math::avg([1, 2, 3, 4, 5])` |
-| [`median()`](#median) | 中位数 | `Math::median([1, 2, 3, 4, 5])` |
-| [`discount()`](#discount) | 计算折扣价 | `Math::discount('100', '0.2')` |
-| [`tax()`](#tax) | 计算税额 | `Math::tax('100', '0.13')` |
+| `add()` | 高精度加法 | `Math::add('1.1', '2.2')` |
+| `sub()` | 高精度减法 | `Math::sub('3.3', '1.1')` |
+| `mul()` | 高精度乘法 | `Math::mul('2.5', '4')` |
+| `div()` | 高精度除法 | `Math::div('10', '3')` |
+| `avg()` | 平均数 | `Math::avg([1, 2, 3, 4, 5])` |
+| `median()` | 中位数 | `Math::median([1, 2, 3, 4, 5])` |
+| `discount()` | 计算折扣价 | `Math::discount('100', '0.2')` |
+| `tax()` | 计算税额 | `Math::tax('100', '0.13')` |
 
 #### 特性
 - ✅ 高精度计算（使用bcmath扩展）
@@ -199,12 +199,12 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| [`distance()`](#distance) | 计算两点距离 | `Geo::distance(39.9042, 116.4074, 31.2304, 121.4737)` |
-| [`isValidCoordinate()`](#isvalidcoordinate) | 验证坐标 | `Geo::isValidCoordinate(39.9042, 116.4074)` |
-| [`wgs84ToGcj02()`](#wgs84togcj02) | WGS84转GCJ02 | `Geo::wgs84ToGcj02(39.9042, 116.4074)` |
-| [`gcj02ToBd09()`](#gcj02tobd09) | GCJ02转BD09 | `Geo::gcj02ToBd09(39.9042, 116.4074)` |
-| [`getBearing()`](#getbearing) | 计算方位角 | `Geo::getBearing(39.9042, 116.4074, 31.2304, 121.4737)` |
-| [`getMidpoint()`](#getmidpoint) | 计算中点坐标 | `Geo::getMidpoint(39.9042, 116.4074, 31.2304, 121.4737)` |
+| `distance()` | 计算两点距离 | `Geo::distance(39.9042, 116.4074, 31.2304, 121.4737)` |
+| `isValidCoordinate()` | 验证坐标 | `Geo::isValidCoordinate(39.9042, 116.4074)` |
+| `wgs84ToGcj02()` | WGS84转GCJ02 | `Geo::wgs84ToGcj02(39.9042, 116.4074)` |
+| `gcj02ToBd09()` | GCJ02转BD09 | `Geo::gcj02ToBd09(39.9042, 116.4074)` |
+| `getBearing()` | 计算方位角 | `Geo::getBearing(39.9042, 116.4074, 31.2304, 121.4737)` |
+| `getMidpoint()` | 计算中点坐标 | `Geo::getMidpoint(39.9042, 116.4074, 31.2304, 121.4737)` |
 
 #### 特性
 - ✅ 使用Haversine公式计算距离
@@ -236,12 +236,12 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| [`get()`](#get) | GET请求 | `Curl::get('https://api.example.com')->send()` |
-| [`post()`](#post) | POST请求 | `Curl::post('https://api.example.com', $data)->send()` |
-| [`put()`](#put) | PUT请求 | `Curl::put('https://api.example.com/1', $data)->send()` |
-| [`delete()`](#delete) | DELETE请求 | `Curl::delete('https://api.example.com/1')->send()` |
-| [`timeout()`](#timeout) | 设置超时 | `Curl::get('https://api.example.com')->timeout(10)->send()` |
-| [`header()`](#header) | 设置请求头 | `Curl::get('https://api.example.com')->header('X-Key', 'value')->send()` |
+| `get()` | GET请求 | `Curl::get('https://api.example.com')->send()` |
+| `post()` | POST请求 | `Curl::post('https://api.example.com', $data)->send()` |
+| `put()` | PUT请求 | `Curl::put('https://api.example.com/1', $data)->send()` |
+| `delete()` | DELETE请求 | `Curl::delete('https://api.example.com/1')->send()` |
+| `timeout()` | 设置超时 | `Curl::get('https://api.example.com')->timeout(10)->send()` |
+| `header()` | 设置请求头 | `Curl::get('https://api.example.com')->header('X-Key', 'value')->send()` |
 
 #### 特性
 - ✅ 支持HTTP/HTTPS协议
@@ -267,12 +267,12 @@
 
 | 方法名 | 功能描述 | 调用示例 |
 |--------|----------|----------|
-| [`text()`](#text) | 设置二维码内容 | `Qr::text('Hello World')` |
-| [`size()`](#size) | 设置二维码大小 | `Qr::text('Hello')->size(300)` |
-| [`errorCorrection()`](#errorcorrection) | 设置错误纠正级别 | `Qr::text('Hello')->errorCorrection('H')` |
-| [`logo()`](#logo) | 添加Logo | `Qr::text('Hello')->logo('path/to/logo.png')` |
-| [`toFile()`](#tofile) | 保存为文件 | `Qr::text('Hello')->toFile('qrcode.png')` |
-| [`toBase64()`](#tobase64) | 生成Base64编码 | `Qr::text('Hello')->toBase64()` |
+| `text()` | 设置二维码内容 | `Qr::text('Hello World')` |
+| `size()` | 设置二维码大小 | `Qr::text('Hello')->size(300)` |
+| `errorCorrection()` | 设置错误纠正级别 | `Qr::text('Hello')->errorCorrection('H')` |
+| `logo()` | 添加Logo | `Qr::text('Hello')->logo('path/to/logo.png')` |
+| `toFile()` | 保存为文件 | `Qr::text('Hello')->toFile('qrcode.png')` |
+| `toBase64()` | 生成Base64编码 | `Qr::text('Hello')->toBase64()` |
 
 #### 特性
 - ✅ 支持多种二维码大小
