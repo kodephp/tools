@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kode\Crypto;
 
-use Kode\Base\Base;
+use Kode\Base;
 use RuntimeException;
 use InvalidArgumentException;
 use BadMethodCallException;

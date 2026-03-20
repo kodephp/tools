@@ -14,74 +14,18 @@ class Message
     protected mixed $data = null;
     protected array $headers = [];
     protected array $ext = [];
-    protected array $fieldMap = [];
     
     protected static array $codes = [];
+    protected static bool $initialized = false;
+    protected static ?Message $instance = null;
     
-    public function __construct(int $code = 200, ?string $msg = null, mixed $data = null)
+    public function __construct()
     {
-        $this->code = $code;
-        $this->msg = $msg ?? $this->getDefaultMsg($code);
-        $this->data = $data;
     }
     
-    public static function configure(array $config): void
+    public static function init(): static
     {
-        if (isset($config['codes'])) {
-            static::$codes = array_merge(static::$codes, $config['codes']);
-        }
-    }
-    
-    public static function codes(array $codes): void
-    {
-        static::$codes = array_merge(static::$codes, $codes);
-    }
-    
-    public static function addCode(int $code, string $msg): void
-    {
-        static::$codes[$code] = $msg;
-    }
-    
-    public static function removeCode(int $code): void
-    {
-        unset(static::$codes[$code]);
-    }
-    
-    public static function clearCodes(): void
-    {
-        static::$codes = [];
-    }
-    
-    public static function getCodes(): array
-    {
-        static::ensureInitialized();
-        return static::$codes;
-    }
-    
-    public static function getMsgByCode(int $code): ?string
-    {
-        static::ensureInitialized();
-        return static::$codes[$code] ?? null;
-    }
-    
-    public static function hasCode(int $code): bool
-    {
-        static::ensureInitialized();
-        return isset(static::$codes[$code]);
-    }
-    
-    protected static function ensureInitialized(): void
-    {
-        static $initialized = false;
-        if (!$initialized) {
-            static::initialize();
-            $initialized = true;
-        }
-    }
-    
-    protected static function initialize(): void
-    {
-        if (empty(static::$codes)) {
+        if (!static::$initialized) {
             static::$codes = [
                 200 => 'success',
                 201 => 'created',
@@ -116,67 +60,147 @@ class Message
                 600002 => 'resource already exists',
                 600003 => 'operation failed',
             ];
+            static::$initialized = true;
         }
+        static::$instance = new static();
+        return static::$instance;
     }
     
-    public function code(int $code): static
+    public static function codes(array $codes): void
     {
-        $this->code = $this->sanitizeCode($code);
-        if ($this->msg === 'success') {
-            $defaultMsg = static::getMsgByCode($this->code);
-            if ($defaultMsg) {
-                $this->msg = $defaultMsg;
-            }
-        }
-        return $this;
+        static::$codes = array_merge(static::$codes, $codes);
     }
     
-    public function msg(string $msg): static
+    public static function addCode(int $code, string $msg): void
     {
-        $this->msg = $this->sanitizeString($msg, 1000);
-        return $this;
+        static::$codes[$code] = $msg;
     }
     
-    public function data(mixed $data): static
+    public static function removeCode(int $code): void
     {
-        $this->data = $this->sanitizeData($data);
-        return $this;
+        unset(static::$codes[$code]);
     }
     
-    public function page(array $page): static
+    public static function clearCodes(): void
     {
-        return $this->ext('page', $this->sanitizeArray($page));
+        static::$codes = [];
     }
     
-    public function header(string $key, string $value): static
+    public static function getCodes(): array
     {
-        $safeKey = $this->sanitizeKey($key);
-        $this->headers[$safeKey] = $this->sanitizeString($value, 500);
-        return $this;
+        return static::$codes;
     }
     
-    public function headers(array $headers): static
+    public static function getMsgByCode(int $code): ?string
     {
-        foreach ($headers as $key => $value) {
-            $this->header($key, (string)$value);
-        }
-        return $this;
+        return static::$codes[$code] ?? null;
     }
     
-    public function ext(string|array $key, mixed $value = null): static
+    public static function hasCode(int $code): bool
     {
-        if (is_array($key)) {
-            foreach ($key as $k => $v) {
-                $this->ext($k, $v);
-            }
-            return $this;
+        return isset(static::$codes[$code]);
+    }
+    
+    public static function __callStatic(string $name, array $arguments): mixed
+    {
+        if (static::$instance === null) {
+            static::$instance = new static();
         }
         
+        if (method_exists(static::class, $name)) {
+            $result = static::$instance->$name(...$arguments);
+            if ($result instanceof static) {
+                static::$instance = $result;
+            }
+            return $result;
+        }
+        
+        if (count($arguments) <= 1) {
+            return static::$instance->addExt($name, $arguments[0] ?? null);
+        }
+        
+        throw new BadMethodCallException("Static method {$name} does not exist");
+    }
+    
+    public static function code(int $code): static
+    {
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        static::$instance->code = static::$instance->sanitizeCode($code);
+        if (static::$instance->msg === 'success') {
+            static::$instance->msg = static::getMsgByCode(static::$instance->code) ?? static::$instance->getDefaultMsg(static::$instance->code);
+        }
+        return static::$instance;
+    }
+    
+    public static function msg(string $msg): static
+    {
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        static::$instance->msg = static::$instance->sanitizeString($msg, 1000);
+        return static::$instance;
+    }
+    
+    public static function data(mixed $data): static
+    {
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        static::$instance->data = static::$instance->sanitizeData($data);
+        return static::$instance;
+    }
+    
+    public static function page(array|int $page): static
+    {
+        if (is_int($page)) {
+            $page = ['page' => $page];
+        }
+        return static::ext('page', $page);
+    }
+    
+    public static function header(string $key, string $value): static
+    {
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        $safeKey = static::$instance->sanitizeKey($key);
+        static::$instance->headers[$safeKey] = static::$instance->sanitizeString($value, 500);
+        return static::$instance;
+    }
+    
+    public static function headers(array $headers): static
+    {
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        foreach ($headers as $key => $value) {
+            static::$instance->header($key, (string)$value);
+        }
+        return static::$instance;
+    }
+    
+    public static function ext(string|array $key, mixed $value = null): static
+    {
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        if (is_array($key)) {
+            foreach ($key as $k => $v) {
+                static::$instance->addExt($k, $v);
+            }
+            return static::$instance;
+        }
+        return static::$instance->addExt($key, $value);
+    }
+    
+    public function addExt(string $key, mixed $value): static
+    {
         $safeKey = $this->sanitizeKey($key);
         if (strlen($safeKey) > 100) {
             throw new InvalidArgumentException('Extension key too long');
         }
-        
         $this->ext[$safeKey] = $this->sanitizeData($value);
         return $this;
     }
@@ -191,44 +215,51 @@ class Message
         return isset($this->ext[$key]);
     }
     
-    public function removeExt(string $key): static
+    public static function removeExt(string $key): static
     {
-        unset($this->ext[$key]);
-        return $this;
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        unset(static::$instance->ext[$key]);
+        return static::$instance;
     }
     
-    public function clearExt(): static
+    public static function clearExt(): static
     {
-        $this->ext = [];
-        return $this;
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        static::$instance->ext = [];
+        return static::$instance;
     }
     
-    public function fieldMap(array $map): static
+    public static function result(): array
     {
-        $this->fieldMap = $this->sanitizeArray($map);
-        return $this;
+        if (static::$instance === null) {
+            static::$instance = new static();
+        }
+        return static::$instance->build();
+    }
+    
+    public function getResult(): array
+    {
+        return $this->build();
     }
     
     public function all(): array
     {
-        return $this->result();
+        return $this->build();
     }
     
-    public function result(array $fields = []): array
+    public function build(): array
     {
-        $map = array_merge($this->fieldMap, $this->sanitizeArray($fields));
-        
-        $codeKey = $map['code'] ?? 'code';
-        $msgKey = $map['msg'] ?? 'msg';
-        $dataKey = $map['data'] ?? 'data';
-        
         $result = [
-            $codeKey => $this->code,
-            $msgKey => $this->msg,
+            'code' => $this->code,
+            'msg' => $this->msg,
         ];
         
         if ($this->data !== null) {
-            $result[$dataKey] = $this->data;
+            $result['data'] = $this->data;
         }
         
         if (!empty($this->headers)) {
@@ -236,8 +267,7 @@ class Message
         }
         
         foreach ($this->ext as $key => $value) {
-            $resultKey = $map[$key] ?? $key;
-            $result[$resultKey] = $value;
+            $result[$key] = $value;
         }
         
         return $result;
@@ -245,12 +275,12 @@ class Message
     
     public function toArray(): array
     {
-        return $this->result();
+        return $this->build();
     }
     
     public function toJson(int $options = JSON_UNESCAPED_UNICODE): string
     {
-        return json_encode($this->result(), $options);
+        return json_encode($this->build(), $options);
     }
     
     public function __toString(): string
@@ -260,100 +290,20 @@ class Message
     
     public function toXml(string $root = 'response'): string
     {
-        return $this->arrayToXml($this->result(), $root);
+        return $this->arrayToXml($this->build(), $root);
     }
     
-    public static function success(?string $msg = null, mixed $data = null): static
+    public function __call(string $name, array $arguments): mixed
     {
-        return new static(200, $msg, $data);
-    }
-    
-    public static function error(?string $msg = null, ?int $code = null, mixed $data = null): static
-    {
-        return new static($code ?? 400, $msg, $data);
-    }
-    
-    public static function warning(?string $msg = null, mixed $data = null): static
-    {
-        return new static(400, $msg ?? '操作警告', $data);
-    }
-    
-    public static function info(?string $msg = null, mixed $data = null): static
-    {
-        return new static(200, $msg ?? '提示信息', $data);
-    }
-    
-    public static function notFound(?string $msg = null): static
-    {
-        return new static(404, $msg ?? '资源不存在');
-    }
-    
-    public static function unauthorized(?string $msg = null): static
-    {
-        return new static(401, $msg ?? '未授权');
-    }
-    
-    public static function forbidden(?string $msg = null): static
-    {
-        return new static(403, $msg ?? '禁止访问');
-    }
-    
-    public static function serverError(?string $msg = null, mixed $data = null): static
-    {
-        return new static(500, $msg ?? '服务器错误', $data);
-    }
-    
-    public static function ok(mixed $data = null, ?string $msg = null): static
-    {
-        return new static(200, $msg ?? '操作成功', $data);
-    }
-    
-    public static function fail(?string $msg = null, ?int $code = null): static
-    {
-        return new static($code ?? 400, $msg ?? '操作失败');
-    }
-    
-    public static function created(mixed $data = null, ?string $msg = null): static
-    {
-        return new static(201, $msg ?? '创建成功', $data);
-    }
-    
-    public static function noContent(): static
-    {
-        return new static(204, 'no content');
-    }
-    
-    public function reset(): static
-    {
-        $this->code = 200;
-        $this->msg = 'success';
-        $this->data = null;
-        $this->headers = [];
-        $this->ext = [];
-        $this->fieldMap = [];
-        return $this;
-    }
-    
-    public function get(string $key, mixed $default = null): mixed
-    {
-        return $this->ext[$key] ?? $default;
-    }
-    
-    public function set(string $key, mixed $value): static
-    {
-        $this->ext[$key] = $value;
-        return $this;
-    }
-    
-    public function has(string $key): bool
-    {
-        return isset($this->ext[$key]);
-    }
-    
-    public function remove(string $key): static
-    {
-        unset($this->ext[$key]);
-        return $this;
+        if (method_exists($this, $name)) {
+            return $this->$name(...$arguments);
+        }
+        
+        if (count($arguments) <= 1) {
+            return $this->addExt($name, $arguments[0] ?? null);
+        }
+        
+        throw new BadMethodCallException("Method {$name} does not exist");
     }
     
     protected function getDefaultMsg(int $code): string
@@ -371,8 +321,8 @@ class Message
     
     protected function sanitizeCode(int $code): int
     {
-        if ($code < 100 || $code > 999) {
-            throw new InvalidArgumentException('Code must be between 100 and 999');
+        if ($code < 1 || $code > 999999) {
+            throw new InvalidArgumentException('Code must be between 1 and 999999');
         }
         return $code;
     }
@@ -474,24 +424,5 @@ class Message
             $this->code >= 500 && $this->code < 600 => 'server_error',
             default => 'unknown'
         };
-    }
-    
-    public static function __callStatic(string $name, array $arguments): mixed
-    {
-        if (method_exists(static::class, $name)) {
-            return static::$name(...$arguments);
-        }
-        throw new BadMethodCallException("Static method {$name} does not exist");
-    }
-    
-    public function __call(string $name, array $arguments): mixed
-    {
-        if (method_exists($this, $name)) {
-            return $this->$name(...$arguments);
-        }
-        if (count($arguments) <= 1) {
-            return $this->set($name, $arguments[0] ?? null);
-        }
-        throw new BadMethodCallException("Method {$name} does not exist");
     }
 }
