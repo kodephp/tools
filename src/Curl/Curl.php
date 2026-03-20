@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Kode\Curl;
 
+use Kode\Base\Base;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
-class Curl
+class Curl extends Base
 {
     public const METHOD_GET = 'GET';
     public const METHOD_POST = 'POST';
@@ -24,17 +26,23 @@ class Curl
     public const CONTENT_TEXT = 'text/plain';
     public const CONTENT_HTML = 'text/html';
 
-    public const ENGINE_CURL = 'curl';
-    public const ENGINE_PERSISTENT = 'persistent';
-
-    private static ?object $persistentShare = null;
     private static bool $php85Detected = false;
+    private static ?object $persistentShare = null;
 
-    private static bool $curlShareSupported = false;
-    private static bool $curlSharePersistentSupported = false;
+    protected static array $config = [
+        'timeout' => 30,
+        'connectTimeout' => 10,
+        'verifySsl' => true,
+        'followLocation' => true,
+        'maxRedirects' => 5,
+        'userAgent' => '',
+        'autoReferer' => true,
+        'decodeGzip' => true,
+        'enableCookie' => false,
+    ];
 
-    private string $url;
-    private string $method;
+    private string $url = '';
+    private string $method = self::METHOD_GET;
     private array $headers = [];
     private array $queryParams = [];
     private mixed $body = null;
@@ -62,203 +70,223 @@ class Curl
     private int $retryDelay = 1000;
     private array $successCallbacks = [];
     private array $errorCallbacks = [];
-
-    private static function detectPhp85(): bool
-    {
-        if (self::$php85Detected) {
-            return PHP_VERSION_ID >= 80500;
-        }
-        self::$php85Detected = true;
-        return PHP_VERSION_ID >= 80500;
-    }
-
-    public static function getEngine(): string
-    {
-        return self::ENGINE_CURL;
-    }
-
-    public static function getPersistentEngine(): string
-    {
-        return self::detectPhp85() ? self::ENGINE_PERSISTENT : self::ENGINE_CURL;
-    }
-
-    private static function initPersistentShare(): object
-    {
-        if (self::$persistentShare !== null) {
-            return self::$persistentShare;
-        }
-
-        if (self::detectPhp85()) {
-            try {
-                $shareOpts = @\curl_share_init_persistent([]);
-                self::$persistentShare = $shareOpts ?: (object) ['type' => 'fallback'];
-            } catch (\Throwable) {
-                self::$persistentShare = (object) ['type' => 'fallback'];
-            }
-        } else {
-            self::$persistentShare = (object) ['type' => 'fallback'];
-        }
-
-        return self::$persistentShare;
-    }
+    private array $middleware = [];
 
     public function __construct(string $url = '')
     {
-        $this->url = $url;
+        $this->url = $this->sanitizeUrl($url);
         $this->method = self::METHOD_GET;
         $this->userAgent = 'KodeCurl/1.0 PHP/' . PHP_VERSION;
     }
-
-    public static function create(string $url = ''): self
+    
+    protected static function initialize(): void
     {
-        return new self($url);
+        if (empty(static::$config)) {
+            static::$config = [
+                'timeout' => 30,
+                'connectTimeout' => 10,
+                'verifySsl' => true,
+                'followLocation' => true,
+                'maxRedirects' => 5,
+                'userAgent' => '',
+                'autoReferer' => true,
+                'decodeGzip' => true,
+                'enableCookie' => false,
+            ];
+        }
     }
 
-    public static function get(string $url, array $query = []): self
+    private static function detectPhp85(): bool
     {
-        return (new self($url))->method(self::METHOD_GET)->query($query);
+        if (!self::$php85Detected) {
+            self::$php85Detected = true;
+            return PHP_VERSION_ID >= 80500;
+        }
+        return PHP_VERSION_ID >= 80500;
     }
 
-    public static function post(string $url, mixed $data = null, array $query = []): self
+    private function sanitizeUrl(string $url): string
     {
-        return (new self($url))->method(self::METHOD_POST)->body($data)->query($query);
+        $url = trim($url);
+        if ($url !== '' && !filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException("Invalid URL: {$url}");
+        }
+        return $url;
     }
 
-    public static function put(string $url, mixed $data = null, array $query = []): self
+    private function sanitizeKey(string $key): string
     {
-        return (new self($url))->method(self::METHOD_PUT)->body($data)->query($query);
+        return preg_replace('/[^a-zA-Z0-9-_]/', '', $key) ?: $key;
     }
 
-    public static function patch(string $url, mixed $data = null, array $query = []): self
+    private function sanitizeData(mixed $data): mixed
     {
-        return (new self($url))->method(self::METHOD_PATCH)->body($data)->query($query);
+        if (is_string($data)) {
+            return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+        }
+        if (is_array($data)) {
+            return array_map(fn($v) => $this->sanitizeData($v), $data);
+        }
+        return $data;
     }
 
-    public static function delete(string $url, mixed $data = null, array $query = []): self
+    public static function create(string $url = ''): static
     {
-        return (new self($url))->method(self::METHOD_DELETE)->body($data)->query($query);
+        return new static($url);
     }
 
-    public function url(string $url): self
+    public static function get(string $url, array $query = []): static
     {
-        $this->url = $url;
+        return (new static($url))->method(self::METHOD_GET)->query($query);
+    }
+
+    public static function post(string $url, mixed $data = null, array $query = []): static
+    {
+        return (new static($url))->method(self::METHOD_POST)->body($data)->query($query);
+    }
+
+    public static function put(string $url, mixed $data = null, array $query = []): static
+    {
+        return (new static($url))->method(self::METHOD_PUT)->body($data)->query($query);
+    }
+
+    public static function patch(string $url, mixed $data = null, array $query = []): static
+    {
+        return (new static($url))->method(self::METHOD_PATCH)->body($data)->query($query);
+    }
+
+    public static function delete(string $url, mixed $data = null, array $query = []): static
+    {
+        return (new static($url))->method(self::METHOD_DELETE)->body($data)->query($query);
+    }
+
+    public function url(string $url): static
+    {
+        $this->url = $this->sanitizeUrl($url);
         return $this;
     }
 
-    public function method(string $method): self
+    public function method(string $method): static
     {
-        $this->method = strtoupper($method);
+        $methods = [
+            self::METHOD_GET, self::METHOD_POST, self::METHOD_PUT,
+            self::METHOD_PATCH, self::METHOD_DELETE, self::METHOD_HEAD, self::METHOD_OPTIONS
+        ];
+        $method = strtoupper($method);
+        if (!in_array($method, $methods, true)) {
+            throw new InvalidArgumentException("Invalid method: {$method}");
+        }
+        $this->method = $method;
         return $this;
     }
 
-    public function asGet(string $url, array $query = []): self
+    public function asGet(string $url, array $query = []): static
     {
         return $this->url($url)->method(self::METHOD_GET)->query($query);
     }
 
-    public function asPost(string $url, mixed $data = null, array $query = []): self
+    public function asPost(string $url, mixed $data = null, array $query = []): static
     {
         return $this->url($url)->method(self::METHOD_POST)->body($data)->query($query);
     }
 
-    public function asPut(string $url, mixed $data = null, array $query = []): self
+    public function asPut(string $url, mixed $data = null, array $query = []): static
     {
         return $this->url($url)->method(self::METHOD_PUT)->body($data)->query($query);
     }
 
-    public function asPatch(string $url, mixed $data = null, array $query = []): self
+    public function asPatch(string $url, mixed $data = null, array $query = []): static
     {
         return $this->url($url)->method(self::METHOD_PATCH)->body($data)->query($query);
     }
 
-    public function asDelete(string $url, mixed $data = null, array $query = []): self
+    public function asDelete(string $url, mixed $data = null, array $query = []): static
     {
         return $this->url($url)->method(self::METHOD_DELETE)->body($data)->query($query);
     }
 
-    public function asJson(mixed $data = true): self
+    public function headers(array $headers): static
     {
-        $this->body = $data;
-        return $this->contentType(self::CONTENT_JSON)->header('Accept', self::CONTENT_JSON);
-    }
-
-    public function headers(array $headers): self
-    {
-        $this->headers = array_merge($this->headers, $headers);
+        foreach ($headers as $key => $value) {
+            $this->header($this->sanitizeKey($key), (string)$value);
+        }
         return $this;
     }
 
-    public function header(string $key, string $value): self
+    public function header(string $key, string $value): static
     {
-        $this->headers[$key] = $value;
+        $this->headers[$this->sanitizeKey($key)] = $this->sanitizeData($value);
         return $this;
     }
 
-    public function accept(string $contentType): self
+    public function accept(string $contentType): static
     {
         return $this->header('Accept', $contentType);
     }
 
-    public function contentType(string $contentType): self
+    public function contentType(string $contentType): static
     {
         return $this->header('Content-Type', $contentType);
     }
 
-    public function authorization(string $token): self
+    public function authorization(string $token): static
     {
         return $this->header('Authorization', 'Bearer ' . $token);
     }
 
-    public function bearer(string $token): self
+    public function bearer(string $token): static
     {
         return $this->authorization($token);
     }
 
-    public function basicAuth(string $username, string $password): self
+    public function basicAuth(string $username, string $password): static
     {
         return $this->header('Authorization', 'Basic ' . base64_encode($username . ':' . $password));
     }
 
-    public function query(array $params): self
+    public function query(array $params): static
     {
-        $this->queryParams = array_merge($this->queryParams, $params);
+        $this->queryParams = array_merge($this->queryParams, $this->sanitizeData($params));
         return $this;
     }
 
-    public function queryParam(string $key, mixed $value): self
+    public function queryParam(string $key, mixed $value): static
     {
-        $this->queryParams[$key] = $value;
+        $this->queryParams[$this->sanitizeKey($key)] = $this->sanitizeData($value);
         return $this;
     }
 
-    public function body(mixed $data): self
+    public function body(mixed $data): static
     {
-        $this->body = $data;
+        $this->body = $this->sanitizeData($data);
         return $this;
     }
 
-    public function withJson(mixed $data = true): self
+    public function withJson(mixed $data = true): static
     {
         $this->body = $data;
         return $this->contentType(self::CONTENT_JSON)->header('Accept', self::CONTENT_JSON);
     }
 
-    public function withForm(array $data): self
+    public function withForm(array $data): static
     {
         $this->body = $data;
         return $this->contentType(self::CONTENT_FORM);
     }
 
-    public function withFiles(array $files): self
+    public function withFiles(array $files): static
     {
         $this->files = $files;
         return $this;
     }
 
-    public function addFile(string $field, string $path, ?string $filename = null): self
+    public function addFile(string $field, string $path, ?string $filename = null): static
     {
         if (!file_exists($path)) {
             throw new InvalidArgumentException("File not found: {$path}");
+        }
+        if (!is_readable($path)) {
+            throw new InvalidArgumentException("File not readable: {$path}");
         }
         $this->files[$field] = [
             'path' => $path,
@@ -268,29 +296,44 @@ class Curl
         return $this;
     }
 
-    public function timeout(int $seconds): self
+    public function timeout(int $seconds): static
     {
+        if ($seconds < 1 || $seconds > 300) {
+            throw new InvalidArgumentException('Timeout must be between 1 and 300 seconds');
+        }
         $this->timeout = $seconds;
         return $this;
     }
 
-    public function connectTimeout(int $seconds): self
+    public function connectTimeout(int $seconds): static
     {
+        if ($seconds < 1 || $seconds > 60) {
+            throw new InvalidArgumentException('Connect timeout must be between 1 and 60 seconds');
+        }
         $this->connectTimeout = $seconds;
         return $this;
     }
 
-    public function verifySsl(bool $verify = true, ?string $caBundle = null): self
+    public function verifySsl(bool $verify = true, ?string $caBundle = null): static
     {
         $this->verifySsl = $verify;
+        if ($caBundle !== null && !file_exists($caBundle)) {
+            throw new InvalidArgumentException("CA bundle not found: {$caBundle}");
+        }
         $this->caBundle = $caBundle;
         return $this;
     }
 
-    public function sslCert(string $certPath, ?string $keyPath = null, ?string $password = null): self
+    public function sslCert(string $certPath, ?string $keyPath = null, ?string $password = null): static
     {
+        if (!file_exists($certPath)) {
+            throw new InvalidArgumentException("SSL cert not found: {$certPath}");
+        }
         $this->options[CURLOPT_SSLCERT] = $certPath;
         if ($keyPath !== null) {
+            if (!file_exists($keyPath)) {
+                throw new InvalidArgumentException("SSL key not found: {$keyPath}");
+            }
             $this->options[CURLOPT_SSLKEY] = $keyPath;
         }
         if ($password !== null) {
@@ -300,13 +343,16 @@ class Curl
         return $this;
     }
 
-    public function proxy(?string $host, ?int $port = null, ?string $user = null, ?string $pass = null): self
+    public function proxy(?string $host, ?int $port = null, ?string $user = null, ?string $pass = null): static
     {
         if ($host === null) {
             $this->proxy = null;
             $this->proxyUser = null;
             $this->proxyPass = null;
         } else {
+            if (!filter_var($host, FILTER_VALIDATE_URL) && !filter_var($host, FILTER_VALIDATE_IP)) {
+                throw new InvalidArgumentException("Invalid proxy host: {$host}");
+            }
             $this->proxy = $host . ($port ? ":{$port}" : '');
             $this->proxyUser = $user;
             $this->proxyPass = $pass;
@@ -314,92 +360,104 @@ class Curl
         return $this;
     }
 
-    public function followLocation(bool $follow = true): self
+    public function followLocation(bool $follow = true): static
     {
         $this->followLocation = $follow;
         return $this;
     }
 
-    public function maxRedirects(int $max): self
+    public function maxRedirects(int $max): static
     {
+        if ($max < 0 || $max > 20) {
+            throw new InvalidArgumentException('Max redirects must be between 0 and 20');
+        }
         $this->maxRedirects = $max;
         return $this;
     }
 
-    public function autoReferer(bool $auto = true): self
+    public function autoReferer(bool $auto = true): static
     {
         $this->autoReferer = $auto;
         return $this;
     }
 
-    public function decodeGzip(bool $decode = true): self
+    public function decodeGzip(bool $decode = true): static
     {
         $this->decodeGzip = $decode;
         return $this;
     }
 
-    public function ignoreErrors(bool $ignore = true): self
+    public function ignoreErrors(bool $ignore = true): static
     {
         $this->ignoreErrors = $ignore;
         return $this;
     }
 
-    public function userAgent(string $agent): self
+    public function userAgent(string $agent): static
     {
-        $this->userAgent = $agent;
+        $this->userAgent = $this->sanitizeData($agent);
         return $this;
     }
 
-    public function referer(string $referer): self
+    public function referer(string $referer): static
     {
-        $this->referer = $referer;
+        $this->referer = $this->sanitizeUrl($referer);
         return $this;
     }
 
-    public function cookie(bool $enable = true, ?string $file = null): self
+    public function cookie(bool $enable = true, ?string $file = null): static
     {
         $this->enableCookie = $enable;
         $this->cookieFile = $file ?? sys_get_temp_dir() . '/kode_curl_cookie.txt';
         return $this;
     }
 
-    public function cookieJar(?string $path = null): self
+    public function cookieJar(?string $path = null): static
     {
         $this->cookieJar = $path ?? sys_get_temp_dir() . '/kode_curl_cookie_jar.txt';
         return $this;
     }
 
-    public function sendCookie(string $cookie): self
+    public function sendCookie(string $cookie): static
     {
         return $this->header('Cookie', $cookie);
     }
 
-    public function retry(int $times, int $delayMs = 1000): self
+    public function retry(int $times, int $delayMs = 1000): static
     {
+        if ($times < 0 || $times > 10) {
+            throw new InvalidArgumentException('Retry times must be between 0 and 10');
+        }
         $this->retryTimes = $times;
-        $this->retryDelay = $delayMs;
+        $this->retryDelay = max(100, $delayMs);
         return $this;
     }
 
-    public function onSuccess(callable $callback): self
+    public function onSuccess(callable $callback): static
     {
         $this->successCallbacks[] = $callback;
         return $this;
     }
 
-    public function onError(callable $callback): self
+    public function onError(callable $callback): static
     {
         $this->errorCallbacks[] = $callback;
         return $this;
     }
 
-    public function option(int $option, mixed $value): self
+    public function middleware(callable $middleware): static
+    {
+        $this->middleware[] = $middleware;
+        return $this;
+    }
+
+    public function option(int $option, mixed $value): static
     {
         $this->options[$option] = $value;
         return $this;
     }
 
-    public function curlOptions(array $options): self
+    public function curlOptions(array $options): static
     {
         $this->options = $this->options + $options;
         return $this;
@@ -461,6 +519,16 @@ class Curl
         $method = $this->method;
         $body = $this->buildBody();
 
+        foreach ($this->middleware as $middleware) {
+            $result = $middleware($this, $url, $method, $body);
+            if ($result === false) {
+                return new Response(null, 0, '', -1, 'Middleware cancelled request');
+            }
+            if (is_array($result)) {
+                [$url, $method, $body] = $result;
+            }
+        }
+
         $ch = curl_init();
 
         try {
@@ -509,7 +577,13 @@ class Curl
             curl_setopt_array($ch, $this->options);
 
             if (self::detectPhp85()) {
-                curl_setopt($ch, CURLSHOPT_SHARE, self::initPersistentShare());
+                try {
+                    $share = @\curl_share_init_persistent([]);
+                    if ($share !== false) {
+                        curl_setopt($ch, CURLSHOPT_SHARE, $share);
+                    }
+                } catch (Throwable) {
+                }
             }
 
             $response = curl_exec($ch);
@@ -538,7 +612,7 @@ class Curl
 
             return $responseObj;
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             curl_close($ch);
             throw new RuntimeException('Curl request failed: ' . $e->getMessage(), 0, $e);
         }
@@ -552,7 +626,7 @@ class Curl
             $ch = curl_init();
             curl_setopt_array($ch, [
                 CURLOPT_URL => $url,
-                CURLOPT_RETURNTRANSFER => $this->returnTransfer,
+                CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST => $method,
                 CURLOPT_HTTPHEADER => $headers,
                 CURLOPT_TIMEOUT => $this->timeout,
@@ -591,7 +665,7 @@ class Curl
             CURLE_COULDNT_RESOLVE_HOST,
             CURLE_COULDNT_CONNECT,
             CURLE_OPERATION_TIMEDOUT,
-            CURLE_SSL_CONNECT_ERROR,
+            CURL_SSL_CONNECT_ERROR,
             CURLE_GOT_NOTHING,
         ]);
     }
@@ -619,6 +693,59 @@ class Curl
     public function object(): ?object
     {
         return $this->send()->object();
+    }
+
+    public function then(callable $onFulfilled, ?callable $onRejected = null): static
+    {
+        $response = $this->send();
+        
+        if ($response->isSuccess()) {
+            $result = $onFulfilled($response, $this);
+            if ($result instanceof static) {
+                return $result;
+            }
+        } elseif ($onRejected !== null) {
+            $result = $onRejected($response, $this);
+            if ($result instanceof static) {
+                return $result;
+            }
+        }
+        
+        return $this;
+    }
+
+    public function catch(callable $onRejected): static
+    {
+        $response = $this->send();
+        
+        if (!$response->isSuccess()) {
+            $result = $onRejected($response, $this);
+            if ($result instanceof static) {
+                return $result;
+            }
+        }
+        
+        return $this;
+    }
+
+    public function finally(callable $onFinally): void
+    {
+        try {
+            $this->send();
+        } finally {
+            $onFinally($this);
+        }
+    }
+
+    public function pipe(static $next): static
+    {
+        return $this->middleware(function ($curl, $url, $method, $body) use ($next) {
+            $response = $curl->send();
+            if ($response->isSuccess()) {
+                return $next->send();
+            }
+            return $response;
+        });
     }
 
     private function detectMimeType(string $path): string
@@ -703,9 +830,44 @@ class Curl
         ]);
 
         if (self::detectPhp85()) {
-            curl_setopt($ch, CURLSHOPT_SHARE, self::initPersistentShare());
+            try {
+                $share = @\curl_share_init_persistent([]);
+                if ($share !== false) {
+                    curl_setopt($ch, CURLSHOPT_SHARE, $share);
+                }
+            } catch (Throwable) {
+            }
         }
 
         return $ch;
+    }
+
+    public static function __callStatic(string $name, array $arguments): mixed
+    {
+        $methods = ['get', 'post', 'put', 'patch', 'delete', 'create', 'pool'];
+        if (in_array($name, $methods, true)) {
+            return (new static())->$name(...$arguments);
+        }
+        return parent::__callStatic($name, $arguments);
+    }
+
+    public function __call(string $name, array $arguments): mixed
+    {
+        $methods = [
+            'url', 'method', 'headers', 'header', 'accept', 'contentType',
+            'authorization', 'bearer', 'basicAuth', 'query', 'queryParam',
+            'body', 'withJson', 'withForm', 'withFiles', 'addFile',
+            'timeout', 'connectTimeout', 'verifySsl', 'sslCert', 'proxy',
+            'followLocation', 'maxRedirects', 'autoReferer', 'decodeGzip',
+            'ignoreErrors', 'userAgent', 'referer', 'cookie', 'cookieJar',
+            'sendCookie', 'retry', 'onSuccess', 'onError', 'middleware',
+            'option', 'curlOptions', 'request', 'toArray', 'toJson',
+            'json', 'object', 'then', 'catch', 'finally', 'pipe'
+        ];
+        
+        if (in_array($name, $methods, true)) {
+            return $this->$name(...$arguments);
+        }
+        return parent::__call($name, $arguments);
     }
 }

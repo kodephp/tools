@@ -1,451 +1,413 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kode\Crypto;
 
-class Crypto
+use Kode\Base\Base;
+use RuntimeException;
+use InvalidArgumentException;
+use BadMethodCallException;
+
+class Crypto extends Base
 {
-    // 加密引擎常量
     public const ENGINE_AUTO = 'auto';
     public const ENGINE_SODIUM = 'sodium';
     public const ENGINE_OPENSSL = 'openssl';
 
-    // 加密模式常量
     public const MODE_STANDARD = 'standard';
     public const MODE_URL_SAFE = 'url_safe';
     public const MODE_COMPACT = 'compact';
-    // 默认密钥
-    public const SECURE_CRYPTO_KEY = 'default_secure_key_2025';
 
-    // 默认加密算法
-    public const DEFAULT_ALGORITHM = 'AES-256-GCM';
+    public const DEFAULT_KEY = 'kode_default_key_2025';
+    public const DEFAULT_ALGO = 'aes-256-gcm';
+    
+    private const MIN_KEY_LENGTH = 16;
+    private const MAX_KEY_LENGTH = 64;
+    private const MAX_DATA_LENGTH = 10_000_000;
 
-    private readonly string $key;
-    private readonly string $engine;
-    private readonly string $mode;
+    private static bool $php85Detected = false;
+    private static ?self $instance = null;
+    
+    protected static array $config = [
+        'engine' => self::ENGINE_AUTO,
+        'mode' => self::MODE_STANDARD,
+    ];
 
-    // 线程安全的缓存
-    private static array $cache = [];
-    private static bool $cacheInitialized = false;
+    private string $key;
+    private string $engine;
+    private string $mode;
 
-    /**
-     * 构造函数
-     *
-     * @param string $key 加密密钥
-     * @param string $engine 加密引擎
-     * @param string $mode 加密模式
-     */
-    public function __construct(string $key = self::SECURE_CRYPTO_KEY, string $engine = self::ENGINE_AUTO, string $mode = self::MODE_STANDARD)
+    public function __construct(?string $key = null, ?string $engine = null, ?string $mode = null)
     {
-        $this->key = $key;
-        $this->engine = $this->selectEngine($engine);
-        $this->mode = $mode;
-        
-        // 初始化缓存（线程安全）
-        if (!self::$cacheInitialized) {
-            self::$cache = [];
-            self::$cacheInitialized = true;
+        $this->key = $this->sanitizeKey($key ?? self::DEFAULT_KEY);
+        $this->engine = $this->detectEngine($engine ?? static::getConfig('engine', self::ENGINE_AUTO));
+        $this->mode = $mode ?? static::getConfig('mode', self::MODE_STANDARD);
+    }
+    
+    protected static function initialize(): void
+    {
+        if (empty(static::$config)) {
+            static::$config = [
+                'engine' => self::ENGINE_AUTO,
+                'mode' => self::MODE_STANDARD,
+            ];
         }
     }
 
-    /**
-     * 获取默认密钥
-     * @return string
-     */
-    public static function getDefaultKey(): string
+    private static function detectPhp85(): bool
     {
-        return self::SECURE_CRYPTO_KEY;
+        if (!self::$php85Detected) {
+            self::$php85Detected = true;
+            return PHP_VERSION_ID >= 80500;
+        }
+        return PHP_VERSION_ID >= 80500;
     }
 
-    /**
-     * 选择加密引擎
-     *
-     * @param string|null $engine
-     * @return string
-     */
-    private function selectEngine(?string $engine = null): string
+    private function detectEngine(string $engine): string
     {
-        // 如果没有指定引擎，则使用实例的引擎设置
-        if ($engine === null) {
-            $engine = $this->engine;
-        }
-
         if ($engine === self::ENGINE_SODIUM && extension_loaded('sodium')) {
             return self::ENGINE_SODIUM;
-        } elseif ($engine === self::ENGINE_OPENSSL && extension_loaded('openssl')) {
+        }
+        if ($engine === self::ENGINE_OPENSSL && extension_loaded('openssl')) {
             return self::ENGINE_OPENSSL;
-        } elseif ($engine === self::ENGINE_AUTO) {
+        }
+        if ($engine === self::ENGINE_AUTO) {
             if (extension_loaded('sodium')) {
                 return self::ENGINE_SODIUM;
-            } elseif (extension_loaded('openssl')) {
+            }
+            if (extension_loaded('openssl')) {
                 return self::ENGINE_OPENSSL;
             }
         }
+        throw new RuntimeException('No encryption engine available');
+    }
 
-        throw new \RuntimeException('No available encryption engine found');
+    private function sanitizeKey(string $key): string
+    {
+        $key = trim($key);
+        if (strlen($key) < self::MIN_KEY_LENGTH) {
+            throw new InvalidArgumentException('Key must be at least ' . self::MIN_KEY_LENGTH . ' characters');
+        }
+        if (strlen($key) > self::MAX_KEY_LENGTH) {
+            $key = substr($key, 0, self::MAX_KEY_LENGTH);
+        }
+        return $key;
+    }
+
+    private function deriveKey(string $key): string
+    {
+        return hash('sha256', $key, true);
+    }
+
+    private function sanitizeData(string $data): string
+    {
+        if (strlen($data) > self::MAX_DATA_LENGTH) {
+            throw new InvalidArgumentException('Data too large for encryption');
+        }
+        return $data;
     }
     
-    /**
-     * 加密数据
-     *
-     * @param string $data 要加密的数据
-     * @return string 加密后的字符串
-     */
     public function encrypt(string $data): string
     {
+        $data = $this->sanitizeData($data);
+        
         if ($this->engine === self::ENGINE_SODIUM) {
-            return $this->encryptWithSodium($data);
-        } else {
-            return $this->encryptWithOpenSSL($data);
+            return $this->encryptSodium($data);
         }
+        return $this->encryptOpenSSL($data);
     }
 
-    /**
-     * 解密数据
-     *
-     * @param string $encrypted 加密后的字符串
-     * @return string 解密后的数据
-     * @throws \Exception
-     */
     public function decrypt(string $encrypted): string
     {
-        $engine = $this->selectEngine($this->engine);
-
-        if ($engine === self::ENGINE_SODIUM) {
-            return $this->decryptWithSodium($encrypted);
-        } else {
-            return $this->decryptWithOpenSSL($encrypted);
+        if ($this->engine === self::ENGINE_SODIUM) {
+            return $this->decryptSodium($encrypted);
         }
+        return $this->decryptOpenSSL($encrypted);
     }
     
-    /**
-     * 使用Sodium加密
-     * @param string $data
-     * @return string
-     */
-    private function encryptWithSodium(string $data): string
+    public function key(string $key): static
     {
-        $key = hash('sha256', $this->key, true); // 确保密钥长度为32字节
-        $nonce = random_bytes(SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES);
-        $encrypted = sodium_crypto_aead_aes256gcm_encrypt($data, '', $nonce, $key);
-        // Use sodium's built-in base64 encoding for better compatibility
-        if ($this->mode === self::MODE_URL_SAFE) {
-            $result = sodium_bin2base64($nonce . $encrypted, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
-        } else {
-            $result = base64_encode($nonce . $encrypted);
-        }
-
-        // 根据模式进行处理
-        if ($this->mode === self::MODE_COMPACT) {
-            // 转换为十六进制字符串，去除非十六进制字符
-            if ($this->mode === self::MODE_URL_SAFE) {
-                $result = bin2hex(sodium_base642bin($result, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING));
-            } else {
-                $result = bin2hex(base64_decode($result));
-            }
-        }
-
-        return $result;
+        $this->key = $this->sanitizeKey($key);
+        return $this;
+    }
+    
+    public function engine(string $engine): static
+    {
+        $this->engine = $this->detectEngine($engine);
+        return $this;
+    }
+    
+    public function mode(string $mode): static
+    {
+        $this->mode = $mode;
+        return $this;
     }
 
-    /**
-     * 使用Sodium解密
-     * @param string $encrypted
-     * @return string
-     * @throws \Exception
-     */
-    private function decryptWithSodium(string $encrypted): string
+    private function encryptSodium(string $data): string
     {
-        // 根据模式进行预处理
-        if ($this->mode === self::MODE_URL_SAFE) {
-            $encrypted = str_pad(strtr($encrypted, '-_', '+/'), strlen($encrypted) % 4, '=', STR_PAD_RIGHT);
-        } elseif ($this->mode === self::MODE_COMPACT) {
-            // 对于紧凑型，先将十六进制转回二进制
-            $encrypted = hex2bin($encrypted);
+        $key = $this->deriveKey($this->key);
+        $nonce = random_bytes(SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES);
+        $encrypted = sodium_crypto_aead_aes256gcm_encrypt($data, '', $nonce, $key);
+
+        if ($encrypted === false) {
+            throw new RuntimeException('Encryption failed');
         }
 
-        // 对于URL_SAFE和STANDARD模式，需要base64解码
-        if ($this->mode !== self::MODE_COMPACT) {
-            $data = base64_decode($encrypted);
-        } else {
-            $data = $encrypted;
+        $payload = $nonce . $encrypted;
+        
+        return match ($this->mode) {
+            self::MODE_URL_SAFE => rtrim(strtr(base64_encode($payload), '+/', '-_'), '='),
+            self::MODE_COMPACT => bin2hex($payload),
+            default => base64_encode($payload)
+        };
+    }
+
+    private function decryptSodium(string $encrypted): string
+    {
+        $payload = match ($this->mode) {
+            self::MODE_URL_SAFE => base64_decode(strtr($encrypted, '-_', '+/')),
+            self::MODE_COMPACT => hex2bin($encrypted),
+            default => base64_decode($encrypted)
+        };
+
+        if ($payload === false) {
+            throw new RuntimeException('Invalid encrypted data format');
         }
 
-        $key = hash('sha256', $this->key, true); // 确保密钥长度为32字节
         $nonceLength = SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES;
-
-        if (\strlen($data) < $nonceLength) {
-            throw new \Exception('Invalid encrypted data');
+        
+        if (strlen($payload) < $nonceLength) {
+            throw new RuntimeException('Encrypted data too short');
         }
 
-        $nonce = substr($data, 0, $nonceLength);
-        $ciphertext = substr($data, $nonceLength);
+        $nonce = substr($payload, 0, $nonceLength);
+        $ciphertext = substr($payload, $nonceLength);
+        $key = $this->deriveKey($this->key);
 
         $decrypted = sodium_crypto_aead_aes256gcm_decrypt($ciphertext, '', $nonce, $key);
 
         if ($decrypted === false) {
-            throw new \Exception('Decryption failed');
+            throw new RuntimeException('Decryption failed - data corrupted or wrong key');
         }
 
         return $decrypted;
     }
 
-    /**
-     * 使用OpenSSL加密
-     * @param string $data
-     * @return string
-     * @throws \Exception
-     */
-    private function encryptWithOpenSSL(string $data): string
+    private function encryptOpenSSL(string $data): string
     {
-        $key = hash('sha256', $this->key, true); // 确保密钥长度正确
-        $ivLength = openssl_cipher_iv_length(self::DEFAULT_ALGORITHM);
-        $iv = openssl_random_pseudo_bytes($ivLength);
+        $key = $this->deriveKey($this->key);
+        $algo = self::DEFAULT_ALGO;
+        $ivLength = openssl_cipher_iv_length($algo);
+        $iv = random_bytes($ivLength);
         $tag = '';
 
-        $encrypted = openssl_encrypt($data, self::DEFAULT_ALGORITHM, $key, OPENSSL_RAW_DATA, $iv, $tag);
+        $encrypted = openssl_encrypt($data, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag);
 
         if ($encrypted === false) {
-            throw new \Exception('Encryption failed: ' . openssl_error_string());
+            throw new RuntimeException('Encryption failed: ' . openssl_error_string());
         }
 
-        $result = base64_encode($iv . $tag . $encrypted);
+        $payload = $iv . $tag . $encrypted;
 
-        // 根据模式进行处理
-        if ($this->mode === self::MODE_URL_SAFE) {
-            $result = strtr($result, '+/', '-_');
-            $result = rtrim($result, '=');
-        } elseif ($this->mode === self::MODE_COMPACT) {
-            // 转换为十六进制字符串，去除非十六进制字符
-            $result = bin2hex(base64_decode($result));
+        return match ($this->mode) {
+            self::MODE_URL_SAFE => rtrim(strtr(base64_encode($payload), '+/', '-_'), '='),
+            self::MODE_COMPACT => bin2hex($payload),
+            default => base64_encode($payload)
+        };
+    }
+
+    private function decryptOpenSSL(string $encrypted): string
+    {
+        $payload = match ($this->mode) {
+            self::MODE_URL_SAFE => base64_decode(strtr($encrypted, '-_', '+/')),
+            self::MODE_COMPACT => hex2bin($encrypted),
+            default => base64_decode($encrypted)
+        };
+
+        if ($payload === false) {
+            throw new RuntimeException('Invalid encrypted data format');
+        }
+
+        $algo = self::DEFAULT_ALGO;
+        $ivLength = openssl_cipher_iv_length($algo);
+        $tagLength = 16;
+
+        if (strlen($payload) < $ivLength + $tagLength) {
+            throw new RuntimeException('Encrypted data too short');
+        }
+
+        $iv = substr($payload, 0, $ivLength);
+        $tag = substr($payload, $ivLength, $tagLength);
+        $ciphertext = substr($payload, $ivLength + $tagLength);
+        $key = $this->deriveKey($this->key);
+
+        $decrypted = openssl_decrypt($ciphertext, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag);
+
+        if ($decrypted === false) {
+            throw new RuntimeException('Decryption failed - data corrupted or wrong key');
+        }
+
+        return $decrypted;
+    }
+    
+    public static function md5(string $str, string $salt = ''): string
+    {
+        if (strlen($salt) > 0) {
+            return hash('md5', $str . $salt);
+        }
+        return hash('md5', $str);
+    }
+    
+    public static function sha1(string $str, string $salt = ''): string
+    {
+        if (strlen($salt) > 0) {
+            return hash('sha1', $str . $salt);
+        }
+        return hash('sha1', $str);
+    }
+    
+    public static function sha256(string $str, string $salt = ''): string
+    {
+        if (strlen($salt) > 0) {
+            return hash('sha256', $str . $salt);
+        }
+        return hash('sha256', $str);
+    }
+    
+    public static function passwordHash(string $str, int $algo = PASSWORD_DEFAULT): string
+    {
+        return password_hash($str, $algo);
+    }
+    
+    public static function passwordVerify(string $str, string $hash): bool
+    {
+        return password_verify($str, $hash);
+    }
+    
+    public static function passwordNeedsRehash(string $hash, int $algo = PASSWORD_DEFAULT): bool
+    {
+        return password_needs_rehash($hash, $algo);
+    }
+    
+    public static function hmac(string $data, string $key, string $algo = 'sha256'): string
+    {
+        if (strlen($key) < 16) {
+            throw new InvalidArgumentException('HMAC key must be at least 16 characters');
+        }
+        return hash_hmac($algo, $data, $key);
+    }
+    
+    public static function hash(string $data, string $algo = 'sha256'): string
+    {
+        return hash($algo, $data);
+    }
+    
+    public static function hashEquals(string $known, string $user): bool
+    {
+        return hash_equals($known, $user);
+    }
+    
+    public static function randomString(int $length = 16, string $charset = 'alphanumeric'): string
+    {
+        if ($length < 4 || $length > 256) {
+            throw new InvalidArgumentException('Length must be between 4 and 256');
+        }
+
+        $charsets = [
+            'alphanumeric' => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+            'alpha' => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+            'numeric' => '0123456789',
+            'hex' => '0123456789abcdef',
+            'special' => '!@#$%^&*()_+-=[]{}|;:,.<>?',
+            'no_ambiguous' => 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+        ];
+
+        $chars = $charsets[$charset] ?? $charsets['alphanumeric'];
+        $result = '';
+        $charsLength = strlen($chars);
+
+        for ($i = 0; $i < $length; $i++) {
+            $result .= $chars[random_int(0, $charsLength - 1)];
         }
 
         return $result;
     }
-
-    /**
-     * 使用OpenSSL解密
-     * @param string $encrypted
-     * @return string
-     * @throws \Exception
-     */
-    private function decryptWithOpenSSL(string $encrypted): string
+    
+    public static function token(int $length = 32): string
     {
-        // 根据模式进行预处理
-        if ($this->mode === self::MODE_URL_SAFE) {
-            $encrypted = str_pad(strtr($encrypted, '-_', '+/'), strlen($encrypted) % 4, '=', STR_PAD_RIGHT);
-        } elseif ($this->mode === self::MODE_COMPACT) {
-            // 对于紧凑型，先将十六进制转回二进制
-            $data = hex2bin($encrypted);
+        if (self::detectPhp85() && PHP_VERSION_ID >= 80500) {
+            return bin2hex(random_bytes($length / 2));
         }
-
-        // 对于URL_SAFE和STANDARD模式，需要base64解码
-        if ($this->mode !== self::MODE_COMPACT) {
-            $key = hash('sha256', $this->key, true); // 确保密钥长度正确
-            $data = base64_decode($encrypted);
-        }
-
-        $ivLength = openssl_cipher_iv_length(self::DEFAULT_ALGORITHM);
-        $tagLength = 16; // GCM标签长度
-
-        if (\strlen($data) < $ivLength + $tagLength) {
-            throw new \Exception('Invalid encrypted data');
-        }
-
-        $iv = substr($data, 0, $ivLength);
-        $tag = substr($data, $ivLength, $tagLength);
-        $ciphertext = substr($data, $ivLength + $tagLength);
-
-        $key = hash('sha256', $this->key, true); // 确保密钥长度正确
-        $decrypted = openssl_decrypt($ciphertext, self::DEFAULT_ALGORITHM, $key, OPENSSL_RAW_DATA, $iv, $tag);
-
-        if ($decrypted === false) {
-            throw new \Exception('Decryption failed: ' . openssl_error_string());
-        }
-
-        return $decrypted;
-    }
-
-    /**
-     * MD5加密（支持加盐）
-     * @param string $str 待加密字符串
-     * @param string $salt 盐值
-     * @return string 加密结果
-     */
-    public function md5(string $str, string $salt = ''): string
-    {
-        return \md5($str . $salt);
+        return bin2hex(random_bytes(max(16, $length / 2)));
     }
     
-    /**
-     * 密码哈希加密
-     * @param string $str 待加密密码
-     * @return string 哈希结果
-     */
-    public static function passwordHash(string $str): string
+    public static function uuid(): string
     {
-        return \password_hash($str, PASSWORD_DEFAULT);
-    }
-
-    /**
-     * 密码验证
-     * @param string $str 待验证密码
-     * @param string $hash 哈希值
-     * @return bool 验证结果
-     */
-    public static function passwordVerify(string $str, string $hash): bool
-    {
-        return \password_verify($str, $hash);
-    }
-
-    /**
-     * HMAC签名
-     * @param string $str 字符串
-     * @param string $key 密钥
-     * @param string $algo 算法
-     * @return string 签名结果
-     */
-    public static function hmac(string $str, string $key, string $algo = 'sha256'): string
-    {
-        return \hash_hmac($algo, $str, $key);
+        $data = random_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
     
-    /**
-     * SSL对称加密
-     * @param string $str 待加密字符串
-     * @param string $key 加密密钥
-     * @return string 加密结果
-     */
-    public function sslEncrypt(string $str, string $key): string
+    public static function orderId(string $prefix = ''): string
     {
-        $method = self::DEFAULT_ALGORITHM;
-        $ivLength = \openssl_cipher_iv_length($method);
-        $iv = \openssl_random_pseudo_bytes($ivLength);
-        $tag = '';
-        $encrypted = \openssl_encrypt(
-            $str,
-            $method,
-            $key,
-            OPENSSL_RAW_DATA,
-            $iv,
-            $tag
-        );
-        return \base64_encode($iv . $tag . $encrypted);
+        $timestamp = date('YmdHis');
+        $random = random_int(1000, 9999);
+        return $prefix . $timestamp . $random;
     }
     
-    /**
-     * SSL对称解密
-     * @param string $str 待解密字符串
-     * @param string $key 解密密钥
-     * @return string 解密结果
-     */
-    public function sslDecrypt(string $str, string $key): string
+    public static function inviteCode(int $length = 6): string
     {
-        $str = \base64_decode($str);
-        $method = self::DEFAULT_ALGORITHM;
-        $ivLength = \openssl_cipher_iv_length($method);
-        $tagLength = 16; // GCM标签长度
-        $iv = \substr($str, 0, $ivLength);
-        $tag = \substr($str, $ivLength, $tagLength);
-        $encrypted = \substr($str, $ivLength + $tagLength);
-        
-        return \openssl_decrypt(
-            $encrypted,
-            $method,
-            $key,
-            OPENSSL_RAW_DATA,
-            $iv,
-            $tag
-        );
+        return self::randomString($length, 'alphanumeric');
     }
-
-    /**
-     * 魔术方法 - 处理动态方法调用
-     * @param string $name 方法名
-     * @param array $arguments 参数数组
-     * @return mixed
-     */
-    public function __call(string $name, array $arguments): mixed
+    
+    public static function verifyCode(int $length = 6): string
     {
-        if (method_exists($this, $name)) {
-            return $this->$name(...$arguments);
+        return self::randomString($length, 'numeric');
+    }
+    
+    public static function getInstance(?string $key = null): static
+    {
+        if (self::$instance === null || $key !== null) {
+            self::$instance = new static($key);
         }
-        throw new \BadMethodCallException("Method {$name} does not exist");
+        return self::$instance;
+    }
+    
+    public static function reset(): void
+    {
+        self::$instance = null;
+        parent::reset();
     }
 
-    /**
-     * 魔术方法 - 处理静态调用
-     * @param string $name 方法名
-     * @param array $arguments 参数数组
-     * @return mixed
-     */
     public static function __callStatic(string $name, array $arguments): mixed
     {
-        $instance = new self();
-        if (method_exists($instance, $name)) {
-            return $instance->$name(...$arguments);
+        $staticMethods = [
+            'md5', 'sha1', 'sha256', 'passwordHash', 'passwordVerify',
+            'passwordNeedsRehash', 'hmac', 'hash', 'hashEquals',
+            'randomString', 'token', 'uuid', 'orderId', 'inviteCode', 'verifyCode'
+        ];
+        
+        if (in_array($name, $staticMethods, true)) {
+            return static::$name(...$arguments);
         }
-        throw new \BadMethodCallException("Method {$name} does not exist");
-    }
-
-    /**
-     * 生成订单号
-     * @param string $prefix 前缀
-     * @return string 订单号
-     */
-    public function order(string $prefix = ''): string
-    {
-        $date = \date('YmdHis');
-        $random = \random_int(1000, 9999);
-        return $prefix . $date . $random;
-    }
-
-    /**
-     * 生成邀请码
-     * @param int $length 邀请码长度
-     * @param string $chars 可选字符集
-     * @return string 邀请码
-     */
-    public function invite(int $length = 6, string $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'): string
-    {
-        $inviteCode = '';
-        $charsLength = \strlen($chars);
-        for ($i = 0; $i < $length; $i++) {
-            $inviteCode .= $chars[\random_int(0, $charsLength - 1)];
+        
+        if ($name === 'encrypt' || $name === 'decrypt') {
+            return (new static())->$name(...$arguments);
         }
-        return $inviteCode;
+        
+        return parent::__callStatic($name, $arguments);
     }
 
-    /**
-     * 生成URL安全码
-     * @param int $length 安全码长度
-     * @return string URL安全码
-     */
-    public function url(int $length = 16): string
+    public function __call(string $name, array $arguments): mixed
     {
-        $bytes = \random_bytes($length);
-        return \rtrim(\strtr(\base64_encode($bytes), '+/', '-_'), '=');
-    }
-
-    /**
-     * 生成注册码
-     * @param int $length 注册码长度
-     * @param int $segmentLength 分段长度
-     * @param string $separator 分隔符
-     * @return string 注册码
-     */
-    public function reg(int $length = 16, int $segmentLength = 4, string $separator = '-'): string
-    {
-        $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        $registrationCode = '';
-        $charsLength = \strlen($chars);
-        for ($i = 0; $i < $length; $i++) {
-            $registrationCode .= $chars[\random_int(0, $charsLength - 1)];
-            if (($i + 1) % $segmentLength === 0 && $i !== $length - 1) {
-                $registrationCode .= $separator;
-            }
+        $methods = ['encrypt', 'decrypt', 'key', 'engine', 'mode'];
+        
+        if (in_array($name, $methods, true)) {
+            return $this->$name(...$arguments);
         }
-        return $registrationCode;
+        
+        return parent::__call($name, $arguments);
     }
-    
-
 }

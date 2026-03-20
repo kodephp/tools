@@ -1,336 +1,497 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kode\Message;
 
-use Kode\Message\CodeMap;
+use BadMethodCallException;
+use InvalidArgumentException;
 
 class Message
 {
-    private readonly CodeMap $codeMap;
-    private int $code = 200;
-    private string $msg = 'success';
-    private mixed $data = null;
-    private array $ext = [];
-    private array $fieldMap = [];
-    private static array $globalFieldMap = [];
-    private static ?CodeMap $staticCodeMap = null;
-    private static bool $codeMapInitialized = false;
-    private static ?Message $staticInstance = null;
+    protected int $code = 200;
+    protected string $msg = 'success';
+    protected mixed $data = null;
+    protected array $headers = [];
+    protected array $ext = [];
+    protected array $fieldMap = [];
     
-    public function __construct(int $code = 200, string $msg = '', mixed $data = null, ?string $customCodeFile = null)
+    protected static array $codes = [];
+    
+    public function __construct(int $code = 200, ?string $msg = null, mixed $data = null)
     {
-        // 确保CodeMap只初始化一次（线程安全）
-        if (!self::$codeMapInitialized) {
-            self::$staticCodeMap = new CodeMap($customCodeFile);
-            self::$codeMapInitialized = true;
-        }
-        $this->codeMap = self::$staticCodeMap;
         $this->code = $code;
-        $defaultMsg = $this->getCodeMsg($code);
-        $this->msg = $msg ?: $defaultMsg ?: 'success';
+        $this->msg = $msg ?? $this->getDefaultMsg($code);
         $this->data = $data;
     }
     
-    /**
-     * 设置用户自定义状态码文件
-     * @param string $filePath 文件路径
-     * @return $this
-     */
-    public function setCustomCodeFile(string $filePath): self
+    public static function configure(array $config): void
     {
-        if (file_exists($filePath)) {
-            $this->codeMap = new CodeMap($filePath);
-            self::$staticCodeMap = $this->codeMap;
-            self::$codeMapInitialized = true;
+        if (isset($config['codes'])) {
+            static::$codes = array_merge(static::$codes, $config['codes']);
+        }
+    }
+    
+    public static function codes(array $codes): void
+    {
+        static::$codes = array_merge(static::$codes, $codes);
+    }
+    
+    public static function addCode(int $code, string $msg): void
+    {
+        static::$codes[$code] = $msg;
+    }
+    
+    public static function removeCode(int $code): void
+    {
+        unset(static::$codes[$code]);
+    }
+    
+    public static function clearCodes(): void
+    {
+        static::$codes = [];
+    }
+    
+    public static function getCodes(): array
+    {
+        static::ensureInitialized();
+        return static::$codes;
+    }
+    
+    public static function getMsgByCode(int $code): ?string
+    {
+        static::ensureInitialized();
+        return static::$codes[$code] ?? null;
+    }
+    
+    public static function hasCode(int $code): bool
+    {
+        static::ensureInitialized();
+        return isset(static::$codes[$code]);
+    }
+    
+    protected static function ensureInitialized(): void
+    {
+        static $initialized = false;
+        if (!$initialized) {
+            static::initialize();
+            $initialized = true;
+        }
+    }
+    
+    protected static function initialize(): void
+    {
+        if (empty(static::$codes)) {
+            static::$codes = [
+                200 => 'success',
+                201 => 'created',
+                202 => 'accepted',
+                204 => 'no content',
+                400 => 'bad request',
+                401 => 'unauthorized',
+                403 => 'forbidden',
+                404 => 'not found',
+                405 => 'method not allowed',
+                408 => 'request timeout',
+                409 => 'conflict',
+                500 => 'internal server error',
+                501 => 'not implemented',
+                502 => 'bad gateway',
+                503 => 'service unavailable',
+                504 => 'gateway timeout',
+                300000 => 'token invalid',
+                300001 => 'token expired',
+                300002 => 'insufficient permissions',
+                300003 => 'account locked',
+                400000 => 'parameter error',
+                400001 => 'missing required parameter',
+                400002 => 'invalid parameter format',
+                400003 => 'parameter out of range',
+                500000 => 'database error',
+                500001 => 'database connection error',
+                500002 => 'third party service error',
+                500003 => 'cache error',
+                600000 => 'business logic error',
+                600001 => 'resource not found',
+                600002 => 'resource already exists',
+                600003 => 'operation failed',
+            ];
+        }
+    }
+    
+    public function code(int $code): static
+    {
+        $this->code = $this->sanitizeCode($code);
+        if ($this->msg === 'success') {
+            $defaultMsg = static::getMsgByCode($this->code);
+            if ($defaultMsg) {
+                $this->msg = $defaultMsg;
+            }
         }
         return $this;
     }
     
-    /**
-     * 重新加载用户自定义状态码文件
-     * @return $this
-     */
-    public function reloadCustomCodeFile(): self
+    public function msg(string $msg): static
     {
-        $this->codeMap->reloadCustomFile();
+        $this->msg = $this->sanitizeString($msg, 1000);
         return $this;
     }
     
-    /**
-     * 设置状态码
-     * @param int $code 状态码（200/400/500 + 6位业务码）
-     * @return $this
-     */
-    public function code(int $code): self
+    public function data(mixed $data): static
     {
-        $this->code = $code;
-        $defaultMsg = $this->getCodeMsg($code);
-        if ($defaultMsg && empty($this->msg)) {
-            $this->msg = $defaultMsg;
+        $this->data = $this->sanitizeData($data);
+        return $this;
+    }
+    
+    public function page(array $page): static
+    {
+        return $this->ext('page', $this->sanitizeArray($page));
+    }
+    
+    public function header(string $key, string $value): static
+    {
+        $safeKey = $this->sanitizeKey($key);
+        $this->headers[$safeKey] = $this->sanitizeString($value, 500);
+        return $this;
+    }
+    
+    public function headers(array $headers): static
+    {
+        foreach ($headers as $key => $value) {
+            $this->header($key, (string)$value);
         }
         return $this;
     }
     
-    /**
-     * 设置消息文本
-     * @param string $msg 消息内容
-     * @return $this
-     */
-    public function msg(string $msg): self
+    public function ext(string|array $key, mixed $value = null): static
     {
-        $this->msg = $msg;
+        if (is_array($key)) {
+            foreach ($key as $k => $v) {
+                $this->ext($k, $v);
+            }
+            return $this;
+        }
+        
+        $safeKey = $this->sanitizeKey($key);
+        if (strlen($safeKey) > 100) {
+            throw new InvalidArgumentException('Extension key too long');
+        }
+        
+        $this->ext[$safeKey] = $this->sanitizeData($value);
         return $this;
     }
     
-    /**
-     * 设置业务数据
-     * @param mixed $data 业务数据
-     * @return $this
-     */
-    public function data(mixed $data): self
+    public function getExt(string $key): mixed
     {
-        $this->data = $data;
+        return $this->ext[$key] ?? null;
+    }
+    
+    public function hasExt(string $key): bool
+    {
+        return isset($this->ext[$key]);
+    }
+    
+    public function removeExt(string $key): static
+    {
+        unset($this->ext[$key]);
         return $this;
     }
     
-    /**
-     * 扩展自定义字段
-     * @param string $key 字段名
-     * @param mixed $value 字段值
-     * @return $this
-     */
-    public function ext(string $key, mixed $value): self
+    public function clearExt(): static
     {
-        $this->ext[$key] = $value;
+        $this->ext = [];
         return $this;
     }
     
-    /**
-     * 批量添加自定义字段
-     * @param array $fields 字段数组
-     * @return $this
-     */
-    public function addFields(array $fields): self
+    public function fieldMap(array $map): static
     {
-        $this->ext = array_merge($this->ext, $fields);
+        $this->fieldMap = $this->sanitizeArray($map);
         return $this;
     }
     
-    /**
-     * 设置字段映射
-     * @param array $map 字段映射数组
-     * @return $this
-     */
-    public function fieldMap(array $map): self
+    public function all(): array
     {
-        $this->fieldMap = $map;
-        return $this;
+        return $this->result();
     }
     
-    /**
-     * 设置全局字段映射
-     * @param array $map 全局字段映射数组
-     */
-    public static function setGlobalFieldMap(array $map): void
-    {
-        self::$globalFieldMap = $map;
-    }
-    
-    /**
-     * 设置字段转换配置
-     * @param array $config 转换配置数组
-     * @return $this
-     */
-    public function setFieldTransform(array $config): self
-    {
-        $this->fieldMap = $config;
-        return $this;
-    }
-    
-    /**
-     * 设置全局字段转换配置
-     * @param array $config 全局转换配置数组
-     */
-    public static function setGlobalFieldTransform(array $config): void
-    {
-        self::$globalFieldMap = $config;
-    }
-    
-    /**
-     * 输出最终结果
-     * @param array $fields 额外字段映射
-     * @return array 消息体数组
-     */
     public function result(array $fields = []): array
     {
-        // 合并全局字段映射和实例字段映射
-        $map = array_merge(self::$globalFieldMap, $this->fieldMap, $fields);
+        $map = array_merge($this->fieldMap, $this->sanitizeArray($fields));
+        
+        $codeKey = $map['code'] ?? 'code';
+        $msgKey = $map['msg'] ?? 'msg';
+        $dataKey = $map['data'] ?? 'data';
         
         $result = [
-            $map['code'] ?? 'code' => $this->code,
-            $map['msg'] ?? 'msg' => $this->msg,
+            $codeKey => $this->code,
+            $msgKey => $this->msg,
         ];
         
-        if ($this->data !== null && !empty($this->data)) {
-            $result[$map['data'] ?? 'data'] = $this->data;
+        if ($this->data !== null) {
+            $result[$dataKey] = $this->data;
         }
         
-        if (!empty($this->ext)) {
-            foreach ($this->ext as $key => $value) {
-                $result[$map[$key] ?? $key] = $value;
-            }
+        if (!empty($this->headers)) {
+            $result['_headers'] = $this->headers;
+        }
+        
+        foreach ($this->ext as $key => $value) {
+            $resultKey = $map[$key] ?? $key;
+            $result[$resultKey] = $value;
         }
         
         return $result;
     }
     
-    /**
-     * 输出JSON格式结果
-     * @param array $fields 额外字段映射
-     * @return string JSON字符串
-     */
-    public function json(array $fields = []): string
+    public function toArray(): array
     {
-        return json_encode($this->result($fields), JSON_UNESCAPED_UNICODE);
+        return $this->result();
     }
     
-    /**
-     * 自定义状态码映射
-     * @param array $map 状态码映射数组
-     * @return void
-     */
-    public static function setCodeMap(array $map): void
+    public function toJson(int $options = JSON_UNESCAPED_UNICODE): string
     {
-        if (!self::$codeMapInitialized) {
-            self::$staticCodeMap = new CodeMap();
-            self::$codeMapInitialized = true;
-        }
-        self::$staticCodeMap->setMap($map);
+        return json_encode($this->result(), $options);
     }
     
-    /**
-     * 获取状态码对应默认消息
-     * @param int $code 状态码
-     * @return string|null 默认消息
-     */
-    public function getCodeMsg(int $code): ?string
-    {
-        return $this->codeMap?->getMsg($code);
-    }
-    
-    /**
-     * 检查状态码是否存在
-     * @param int $code 状态码
-     * @return bool 是否存在
-     */
-    public function codeExists(int $code): bool
-    {
-        return $this->codeMap->hasCode($code);
-    }
-    
-    /**
-     * 设置自定义状态码
-     * @param array $codes 状态码数组
-     * @return $this
-     */
-    public function setCustomCodes(array $codes): self
-    {
-        $this->codeMap->setMap($codes);
-        return $this;
-    }
-    
-    /**
-     * 添加单个状态码
-     * @param int $code 状态码
-     * @param string $msg 状态消息
-     * @return $this
-     */
-    public function addCode(int $code, string $msg): self
-    {
-        $this->codeMap->addCode($code, $msg);
-        return $this;
-    }
-    
-    /**
-     * 魔术方法 - 处理动态字段设置
-     * @param string $name 方法名
-     * @param array $arguments 参数数组
-     * @return self
-     */
-    public function __call(string $name, array $arguments): self
-    {
-        // 安全检查：禁止使用特殊方法名
-        $forbiddenNames = ['__construct', '__destruct', '__call', '__callStatic', '__get', '__set', '__isset', '__unset', '__sleep', '__wakeup', '__serialize', '__unserialize', '__toString', '__invoke', '__set_state', '__clone', '__debugInfo'];
-        if (in_array($name, $forbiddenNames)) {
-            throw new \BadMethodCallException("Method {$name} is not allowed");
-        }
-        
-        // 安全检查：禁止使用包含特殊字符的方法名
-        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name)) {
-            throw new \BadMethodCallException("Invalid method name: {$name}");
-        }
-        
-        // 安全检查：参数数量限制
-        if (count($arguments) > 1) {
-            throw new \BadMethodCallException("Method {$name} accepts at most one argument");
-        }
-        
-        $this->ext[$name] = $arguments[0] ?? '';
-        return $this;
-    }
-    
-    /**
-     * 魔术方法 - 处理静态调用
-     * @param string $name 方法名
-     * @param array $arguments 参数数组
-     * @return self|array|string
-     */
-    public static function __callStatic(string $name, array $arguments): mixed
-    {
-        // 安全检查：禁止使用特殊方法名
-        $forbiddenNames = ['__construct', '__destruct', '__call', '__callStatic', '__get', '__set', '__isset', '__unset', '__sleep', '__wakeup', '__serialize', '__unserialize', '__toString', '__invoke', '__set_state', '__clone', '__debugInfo'];
-        if (in_array($name, $forbiddenNames)) {
-            throw new \BadMethodCallException("Method {$name} is not allowed");
-        }
-        
-        // 安全检查：禁止使用包含特殊字符的方法名
-        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name)) {
-            throw new \BadMethodCallException("Invalid method name: {$name}");
-        }
-        
-        // 复用静态实例以支持链式调用
-        if (self::$staticInstance === null) {
-            self::$staticInstance = new self();
-        }
-        $instance = self::$staticInstance;
-        
-        // 重置消息体状态（除了codeMap）
-        $instance->code = 200;
-        $instance->msg = 'success';
-        $instance->data = null;
-        $instance->ext = [];
-        $instance->fieldMap = [];
-        
-        switch ($name) {
-            case 'result':
-                $result = $instance->result($arguments[0] ?? []);
-                self::$staticInstance = null;
-                return $result;
-            case 'json':
-                $result = $instance->json($arguments[0] ?? []);
-                self::$staticInstance = null;
-                return $result;
-            default:
-                return $instance->$name(...$arguments);
-        }
-    }
-    
-    /**
-     * 魔术方法 - 字符串转换
-     * @return string JSON字符串
-     */
     public function __toString(): string
     {
-        return $this->json();
+        return $this->toJson();
+    }
+    
+    public function toXml(string $root = 'response'): string
+    {
+        return $this->arrayToXml($this->result(), $root);
+    }
+    
+    public static function success(?string $msg = null, mixed $data = null): static
+    {
+        return new static(200, $msg, $data);
+    }
+    
+    public static function error(?string $msg = null, ?int $code = null, mixed $data = null): static
+    {
+        return new static($code ?? 400, $msg, $data);
+    }
+    
+    public static function warning(?string $msg = null, mixed $data = null): static
+    {
+        return new static(400, $msg ?? '操作警告', $data);
+    }
+    
+    public static function info(?string $msg = null, mixed $data = null): static
+    {
+        return new static(200, $msg ?? '提示信息', $data);
+    }
+    
+    public static function notFound(?string $msg = null): static
+    {
+        return new static(404, $msg ?? '资源不存在');
+    }
+    
+    public static function unauthorized(?string $msg = null): static
+    {
+        return new static(401, $msg ?? '未授权');
+    }
+    
+    public static function forbidden(?string $msg = null): static
+    {
+        return new static(403, $msg ?? '禁止访问');
+    }
+    
+    public static function serverError(?string $msg = null, mixed $data = null): static
+    {
+        return new static(500, $msg ?? '服务器错误', $data);
+    }
+    
+    public static function ok(mixed $data = null, ?string $msg = null): static
+    {
+        return new static(200, $msg ?? '操作成功', $data);
+    }
+    
+    public static function fail(?string $msg = null, ?int $code = null): static
+    {
+        return new static($code ?? 400, $msg ?? '操作失败');
+    }
+    
+    public static function created(mixed $data = null, ?string $msg = null): static
+    {
+        return new static(201, $msg ?? '创建成功', $data);
+    }
+    
+    public static function noContent(): static
+    {
+        return new static(204, 'no content');
+    }
+    
+    public function reset(): static
+    {
+        $this->code = 200;
+        $this->msg = 'success';
+        $this->data = null;
+        $this->headers = [];
+        $this->ext = [];
+        $this->fieldMap = [];
+        return $this;
+    }
+    
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return $this->ext[$key] ?? $default;
+    }
+    
+    public function set(string $key, mixed $value): static
+    {
+        $this->ext[$key] = $value;
+        return $this;
+    }
+    
+    public function has(string $key): bool
+    {
+        return isset($this->ext[$key]);
+    }
+    
+    public function remove(string $key): static
+    {
+        unset($this->ext[$key]);
+        return $this;
+    }
+    
+    protected function getDefaultMsg(int $code): string
+    {
+        return static::getMsgByCode($code) ?? match ($code) {
+            200 => 'success',
+            400 => '操作失败',
+            401 => '未授权',
+            403 => '禁止访问',
+            404 => '资源不存在',
+            500 => '服务器错误',
+            default => '操作完成'
+        };
+    }
+    
+    protected function sanitizeCode(int $code): int
+    {
+        if ($code < 100 || $code > 999) {
+            throw new InvalidArgumentException('Code must be between 100 and 999');
+        }
+        return $code;
+    }
+    
+    protected function sanitizeString(string $str, int $maxLength = 1000): string
+    {
+        $str = trim($str);
+        if (strlen($str) > $maxLength) {
+            $str = substr($str, 0, $maxLength);
+        }
+        return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
+    }
+    
+    protected function sanitizeKey(string $key): string
+    {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $key)) {
+            throw new InvalidArgumentException("Invalid key: {$key}");
+        }
+        return $key;
+    }
+    
+    protected function sanitizeData(mixed $data): mixed
+    {
+        if (is_string($data)) {
+            return $this->sanitizeString($data);
+        }
+        if (is_array($data)) {
+            return $this->sanitizeArray($data);
+        }
+        return $data;
+    }
+    
+    protected function sanitizeArray(array $arr): array
+    {
+        $result = [];
+        foreach ($arr as $key => $value) {
+            $safeKey = $this->sanitizeKey((string)$key);
+            $result[$safeKey] = $this->sanitizeData($value);
+        }
+        return $result;
+    }
+    
+    protected function arrayToXml(array $data, string $root, int $depth = 0): string
+    {
+        if ($depth > 10) {
+            return '';
+        }
+        
+        $indent = str_repeat('  ', $depth);
+        $xml = "{$indent}<{$root}>";
+        
+        foreach ($data as $key => $value) {
+            $safeKey = preg_replace('/[^a-zA-Z0-9_]/', '_', (string)$key);
+            
+            if (is_array($value)) {
+                $xml .= "\n" . $this->arrayToXml($value, $safeKey, $depth + 1);
+                $xml .= "\n{$indent}";
+            } else {
+                $xml .= "<{$safeKey}>" . htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8') . "</{$safeKey}>";
+            }
+        }
+        
+        $xml .= "</{$root}>";
+        return $xml;
+    }
+    
+    public function isSuccess(): bool
+    {
+        return $this->code >= 200 && $this->code < 300;
+    }
+    
+    public function isError(): bool
+    {
+        return $this->code >= 400;
+    }
+    
+    public function isClientError(): bool
+    {
+        return $this->code >= 400 && $this->code < 500;
+    }
+    
+    public function isServerError(): bool
+    {
+        return $this->code >= 500;
+    }
+    
+    public function isRedirect(): bool
+    {
+        return $this->code >= 300 && $this->code < 400;
+    }
+    
+    public function statusCodeCategory(): string
+    {
+        return match (true) {
+            $this->code >= 100 && $this->code < 200 => 'informational',
+            $this->code >= 200 && $this->code < 300 => 'success',
+            $this->code >= 300 && $this->code < 400 => 'redirect',
+            $this->code >= 400 && $this->code < 500 => 'client_error',
+            $this->code >= 500 && $this->code < 600 => 'server_error',
+            default => 'unknown'
+        };
+    }
+    
+    public static function __callStatic(string $name, array $arguments): mixed
+    {
+        if (method_exists(static::class, $name)) {
+            return static::$name(...$arguments);
+        }
+        throw new BadMethodCallException("Static method {$name} does not exist");
+    }
+    
+    public function __call(string $name, array $arguments): mixed
+    {
+        if (method_exists($this, $name)) {
+            return $this->$name(...$arguments);
+        }
+        if (count($arguments) <= 1) {
+            return $this->set($name, $arguments[0] ?? null);
+        }
+        throw new BadMethodCallException("Method {$name} does not exist");
     }
 }
