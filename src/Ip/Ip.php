@@ -9,7 +9,20 @@ namespace Kode\Ip;
 class Ip
 {
     /**
-     * 获取真实客户端IP地址
+     * 获取客户端IP地址
+     * @param bool $checkProxy 是否检查代理头获取真实IP
+     * @return string|null IP地址
+     */
+    public static function get(bool $checkProxy = false): ?string
+    {
+        if ($checkProxy) {
+            return self::getRealIp();
+        }
+        return $_SERVER['REMOTE_ADDR'] ?? null;
+    }
+
+    /**
+     * 获取真实客户端IP地址（支持代理）
      * @return string|null 真实IP地址，如果未找到则返回null
      */
     public static function getRealIp(): ?string
