@@ -14,18 +14,82 @@ class Message
     protected mixed $data = null;
     protected array $headers = [];
     protected array $ext = [];
+    protected array $fieldMap = [];
     
     protected static array $codes = [];
     protected static bool $initialized = false;
     protected static ?Message $instance = null;
     
-    public function __construct()
+    private const CHAIN_METHODS = [
+        'code', 'msg', 'data', 'page', 'header', 'headers', 'ext', 'fieldMap',
+        'result', 'all', 'output', 'toArray', 'toJson', 'toXml', 'isSuccess', 'isError',
+        'isClientError', 'isServerError', 'isRedirect', 'statusCodeCategory',
+        'get', 'set', 'has', 'remove', 'reset'
+    ];
+    
+    public function __construct(int $code = 200, ?string $msg = null, mixed $data = null)
     {
+        $this->code = $this->sanitizeCode($code);
+        $this->msg = $msg ?? $this->getDefaultMsg($this->code);
+        $this->data = $data;
     }
     
-    public static function init(): static
+    public static function configure(array $config): void
+    {
+        if (isset($config['codes'])) {
+            static::$codes = array_merge(static::$codes, $config['codes']);
+        }
+    }
+    
+    public static function codes(array $codes): void
+    {
+        static::$codes = array_merge(static::$codes, $codes);
+    }
+    
+    public static function addCode(int $code, string $msg): void
+    {
+        static::$codes[$code] = $msg;
+    }
+    
+    public static function removeCode(int $code): void
+    {
+        unset(static::$codes[$code]);
+    }
+    
+    public static function clearCodes(): void
+    {
+        static::$codes = [];
+    }
+    
+    public static function getCodes(): array
+    {
+        static::ensureInitialized();
+        return static::$codes;
+    }
+    
+    public static function getMsgByCode(int $code): ?string
+    {
+        static::ensureInitialized();
+        return static::$codes[$code] ?? null;
+    }
+    
+    public static function hasCode(int $code): bool
+    {
+        static::ensureInitialized();
+        return isset(static::$codes[$code]);
+    }
+    
+    protected static function ensureInitialized(): void
     {
         if (!static::$initialized) {
+            static::initialize();
+            static::$initialized = true;
+        }
+    }
+    
+    protected static function initialize(): void
+    {
+        if (empty(static::$codes)) {
             static::$codes = [
                 200 => 'success',
                 201 => 'created',
@@ -60,206 +124,111 @@ class Message
                 600002 => 'resource already exists',
                 600003 => 'operation failed',
             ];
-            static::$initialized = true;
         }
-        static::$instance = new static();
-        return static::$instance;
     }
     
-    public static function codes(array $codes): void
-    {
-        static::$codes = array_merge(static::$codes, $codes);
-    }
-    
-    public static function addCode(int $code, string $msg): void
-    {
-        static::$codes[$code] = $msg;
-    }
-    
-    public static function removeCode(int $code): void
-    {
-        unset(static::$codes[$code]);
-    }
-    
-    public static function clearCodes(): void
-    {
-        static::$codes = [];
-    }
-    
-    public static function getCodes(): array
-    {
-        return static::$codes;
-    }
-    
-    public static function getMsgByCode(int $code): ?string
-    {
-        return static::$codes[$code] ?? null;
-    }
-    
-    public static function hasCode(int $code): bool
-    {
-        return isset(static::$codes[$code]);
-    }
-    
-    public static function __callStatic(string $name, array $arguments): mixed
+    protected static function getInstance(): self
     {
         if (static::$instance === null) {
             static::$instance = new static();
         }
-        
-        if (method_exists(static::class, $name)) {
-            $result = static::$instance->$name(...$arguments);
-            if ($result instanceof static) {
-                static::$instance = $result;
+        return static::$instance;
+    }
+    
+    public static function clear(): void
+    {
+        static::$instance = null;
+        static::$initialized = false;
+    }
+    
+    private function chainCode(int $code): static
+    {
+        $this->code = $this->sanitizeCode($code);
+        if ($this->msg === 'success') {
+            $defaultMsg = static::getMsgByCode($this->code);
+            if ($defaultMsg) {
+                $this->msg = $defaultMsg;
             }
-            return $result;
         }
-        
-        if (count($arguments) <= 1) {
-            return static::$instance->addExt($name, $arguments[0] ?? null);
-        }
-        
-        throw new BadMethodCallException("Static method {$name} does not exist");
+        return $this;
     }
     
-    public static function code(int $code): static
+    private function chainMsg(string $msg): static
     {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
-        static::$instance->code = static::$instance->sanitizeCode($code);
-        if (static::$instance->msg === 'success') {
-            static::$instance->msg = static::getMsgByCode(static::$instance->code) ?? static::$instance->getDefaultMsg(static::$instance->code);
-        }
-        return static::$instance;
+        $this->msg = $this->sanitizeString($msg, 1000);
+        return $this;
     }
     
-    public static function msg(string $msg): static
+    private function chainData(mixed $data): static
     {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
-        static::$instance->msg = static::$instance->sanitizeString($msg, 1000);
-        return static::$instance;
+        $this->data = $this->sanitizeData($data);
+        return $this;
     }
     
-    public static function data(mixed $data): static
+    private function chainPage(array $page): static
     {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
-        static::$instance->data = static::$instance->sanitizeData($data);
-        return static::$instance;
+        return $this->chainExt('page', $this->sanitizeArray($page));
     }
     
-    public static function page(array|int $page): static
+    private function chainHeader(string $key, string $value): static
     {
-        if (is_int($page)) {
-            $page = ['page' => $page];
-        }
-        return static::ext('page', $page);
+        $safeKey = $this->sanitizeKey($key);
+        $this->headers[$safeKey] = $this->sanitizeString($value, 500);
+        return $this;
     }
     
-    public static function header(string $key, string $value): static
+    private function chainHeaders(array $headers): static
     {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
-        $safeKey = static::$instance->sanitizeKey($key);
-        static::$instance->headers[$safeKey] = static::$instance->sanitizeString($value, 500);
-        return static::$instance;
-    }
-    
-    public static function headers(array $headers): static
-    {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
         foreach ($headers as $key => $value) {
-            static::$instance->header($key, (string)$value);
+            $this->chainHeader($key, (string)$value);
         }
-        return static::$instance;
+        return $this;
     }
     
-    public static function ext(string|array $key, mixed $value = null): static
+    private function chainExt(string|array $key, mixed $value = null): static
     {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
         if (is_array($key)) {
             foreach ($key as $k => $v) {
-                static::$instance->addExt($k, $v);
+                $this->chainExt($k, $v);
             }
-            return static::$instance;
+            return $this;
         }
-        return static::$instance->addExt($key, $value);
-    }
-    
-    public function addExt(string $key, mixed $value): static
-    {
+        
         $safeKey = $this->sanitizeKey($key);
         if (strlen($safeKey) > 100) {
             throw new InvalidArgumentException('Extension key too long');
         }
+        
         $this->ext[$safeKey] = $this->sanitizeData($value);
         return $this;
     }
     
-    public function getExt(string $key): mixed
+    private function chainFieldMap(array $map): static
     {
-        return $this->ext[$key] ?? null;
+        $this->fieldMap = $this->sanitizeArray($map);
+        return $this;
     }
     
-    public function hasExt(string $key): bool
+    private function chainAll(): array
     {
-        return isset($this->ext[$key]);
+        return $this->chainResult();
     }
     
-    public static function removeExt(string $key): static
+    private function chainResult(array $fields = []): array
     {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
-        unset(static::$instance->ext[$key]);
-        return static::$instance;
-    }
-    
-    public static function clearExt(): static
-    {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
-        static::$instance->ext = [];
-        return static::$instance;
-    }
-    
-    public static function result(): array
-    {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
-        return static::$instance->build();
-    }
-    
-    public function getResult(): array
-    {
-        return $this->build();
-    }
-    
-    public function all(): array
-    {
-        return $this->build();
-    }
-    
-    public function build(): array
-    {
+        $map = array_merge($this->fieldMap, $this->sanitizeArray($fields));
+        
+        $codeKey = $map['code'] ?? 'code';
+        $msgKey = $map['msg'] ?? 'msg';
+        $dataKey = $map['data'] ?? 'data';
+        
         $result = [
-            'code' => $this->code,
-            'msg' => $this->msg,
+            $codeKey => $this->code,
+            $msgKey => $this->msg,
         ];
         
         if ($this->data !== null) {
-            $result['data'] = $this->data;
+            $result[$dataKey] = $this->data;
         }
         
         if (!empty($this->headers)) {
@@ -267,20 +236,111 @@ class Message
         }
         
         foreach ($this->ext as $key => $value) {
-            $result[$key] = $value;
+            $resultKey = $map[$key] ?? $key;
+            $result[$resultKey] = $value;
         }
         
         return $result;
     }
     
+    private function chainOutput(array $fields = []): array
+    {
+        return $this->chainResult($fields);
+    }
+    
+    private function chainToArray(): array
+    {
+        return $this->chainResult();
+    }
+    
+    private function chainToJson(int $options = JSON_UNESCAPED_UNICODE): string
+    {
+        return json_encode($this->chainResult(), $options);
+    }
+    
+    private function chainToXml(string $root = 'response'): string
+    {
+        return $this->arrayToXml($this->chainResult(), $root);
+    }
+    
+    private function chainIsSuccess(): bool
+    {
+        return $this->code >= 200 && $this->code < 300;
+    }
+    
+    private function chainIsError(): bool
+    {
+        return $this->code >= 400;
+    }
+    
+    private function chainIsClientError(): bool
+    {
+        return $this->code >= 400 && $this->code < 500;
+    }
+    
+    private function chainIsServerError(): bool
+    {
+        return $this->code >= 500;
+    }
+    
+    private function chainIsRedirect(): bool
+    {
+        return $this->code >= 300 && $this->code < 400;
+    }
+    
+    private function chainStatusCodeCategory(): string
+    {
+        return match (true) {
+            $this->code >= 100 && $this->code < 200 => 'informational',
+            $this->code >= 200 && $this->code < 300 => 'success',
+            $this->code >= 300 && $this->code < 400 => 'redirect',
+            $this->code >= 400 && $this->code < 500 => 'client_error',
+            $this->code >= 500 && $this->code < 600 => 'server_error',
+            default => 'unknown'
+        };
+    }
+    
+    private function chainGet(string $key, mixed $default = null): mixed
+    {
+        return $this->ext[$key] ?? $default;
+    }
+    
+    private function chainSet(string $key, mixed $value): static
+    {
+        $this->ext[$key] = $value;
+        return $this;
+    }
+    
+    private function chainHas(string $key): bool
+    {
+        return isset($this->ext[$key]);
+    }
+    
+    private function chainRemove(string $key): static
+    {
+        unset($this->ext[$key]);
+        return $this;
+    }
+    
+    private function chainReset(): static
+    {
+        $this->code = 200;
+        $this->msg = 'success';
+        $this->data = null;
+        $this->headers = [];
+        $this->ext = [];
+        $this->fieldMap = [];
+        return $this;
+    }
+    
     public function toArray(): array
     {
-        return $this->build();
+        return $this->chainResult();
     }
     
     public function toJson(int $options = JSON_UNESCAPED_UNICODE): string
     {
-        return json_encode($this->build(), $options);
+        return json_encode($this->chainResult(), $options);
     }
     
     public function __toString(): string
@@ -290,20 +350,62 @@ class Message
     
     public function toXml(string $root = 'response'): string
     {
-        return $this->arrayToXml($this->build(), $root);
+        return $this->arrayToXml($this->chainResult(), $root);
     }
     
-    public function __call(string $name, array $arguments): mixed
+    public function isSuccess(): bool
     {
-        if (method_exists($this, $name)) {
-            return $this->$name(...$arguments);
-        }
-        
-        if (count($arguments) <= 1) {
-            return $this->addExt($name, $arguments[0] ?? null);
-        }
-        
-        throw new BadMethodCallException("Method {$name} does not exist");
+        return $this->chainIsSuccess();
+    }
+    
+    public function isError(): bool
+    {
+        return $this->chainIsError();
+    }
+    
+    public function isClientError(): bool
+    {
+        return $this->chainIsClientError();
+    }
+    
+    public function isServerError(): bool
+    {
+        return $this->chainIsServerError();
+    }
+    
+    public function isRedirect(): bool
+    {
+        return $this->chainIsRedirect();
+    }
+    
+    public function statusCodeCategory(): string
+    {
+        return $this->chainStatusCodeCategory();
+    }
+    
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return $this->chainGet($key, $default);
+    }
+    
+    public function set(string $key, mixed $value): static
+    {
+        return $this->chainSet($key, $value);
+    }
+    
+    public function has(string $key): bool
+    {
+        return $this->chainHas($key);
+    }
+    
+    public function remove(string $key): static
+    {
+        return $this->chainRemove($key);
+    }
+    
+    public function reset(): static
+    {
+        return $this->chainReset();
     }
     
     protected function getDefaultMsg(int $code): string
@@ -389,40 +491,40 @@ class Message
         return $xml;
     }
     
-    public function isSuccess(): bool
+    public static function __callStatic(string $name, array $arguments): mixed
     {
-        return $this->code >= 200 && $this->code < 300;
+        $instance = static::getInstance();
+        
+        if ($name === 'result') {
+            $instance->chainReset();
+            return $instance->chainResult(...$arguments);
+        }
+        
+        $methodName = 'chain' . ucfirst($name);
+        if (in_array($name, self::CHAIN_METHODS, true) && method_exists($instance, $methodName)) {
+            $instance->chainReset();
+            return $instance->$methodName(...$arguments);
+        }
+        
+        $instance->chainReset();
+        if (count($arguments) <= 1) {
+            return $instance->chainSet($name, $arguments[0] ?? null);
+        }
+        
+        throw new BadMethodCallException("Static method {$name} does not exist");
     }
     
-    public function isError(): bool
+    public function __call(string $name, array $arguments): mixed
     {
-        return $this->code >= 400;
-    }
-    
-    public function isClientError(): bool
-    {
-        return $this->code >= 400 && $this->code < 500;
-    }
-    
-    public function isServerError(): bool
-    {
-        return $this->code >= 500;
-    }
-    
-    public function isRedirect(): bool
-    {
-        return $this->code >= 300 && $this->code < 400;
-    }
-    
-    public function statusCodeCategory(): string
-    {
-        return match (true) {
-            $this->code >= 100 && $this->code < 200 => 'informational',
-            $this->code >= 200 && $this->code < 300 => 'success',
-            $this->code >= 300 && $this->code < 400 => 'redirect',
-            $this->code >= 400 && $this->code < 500 => 'client_error',
-            $this->code >= 500 && $this->code < 600 => 'server_error',
-            default => 'unknown'
-        };
+        $methodName = 'chain' . ucfirst($name);
+        if (in_array($name, self::CHAIN_METHODS, true) && method_exists($this, $methodName)) {
+            return $this->$methodName(...$arguments);
+        }
+        
+        if (count($arguments) <= 1) {
+            return $this->chainSet($name, $arguments[0] ?? null);
+        }
+        
+        throw new BadMethodCallException("Method {$name} does not exist");
     }
 }

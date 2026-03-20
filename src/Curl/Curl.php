@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Kode\Curl;
 
-use Kode\Base\Base;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
+use BadMethodCallException;
 
-class Curl extends Base
+class Curl
 {
     public const METHOD_GET = 'GET';
     public const METHOD_POST = 'POST';
@@ -665,7 +665,7 @@ class Curl extends Base
             CURLE_COULDNT_RESOLVE_HOST,
             CURLE_COULDNT_CONNECT,
             CURLE_OPERATION_TIMEDOUT,
-            CURL_SSL_CONNECT_ERROR,
+            CURLE_SSL_CONNECT_ERROR,
             CURLE_GOT_NOTHING,
         ]);
     }
@@ -737,7 +737,7 @@ class Curl extends Base
         }
     }
 
-    public function pipe(static $next): static
+    public function pipe(self $next): static
     {
         return $this->middleware(function ($curl, $url, $method, $body) use ($next) {
             $response = $curl->send();
@@ -848,7 +848,7 @@ class Curl extends Base
         if (in_array($name, $methods, true)) {
             return (new static())->$name(...$arguments);
         }
-        return parent::__callStatic($name, $arguments);
+        throw new BadMethodCallException("Static method {$name} does not exist");
     }
 
     public function __call(string $name, array $arguments): mixed
@@ -868,6 +868,6 @@ class Curl extends Base
         if (in_array($name, $methods, true)) {
             return $this->$name(...$arguments);
         }
-        return parent::__call($name, $arguments);
+        throw new BadMethodCallException("Method {$name} does not exist");
     }
 }
