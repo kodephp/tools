@@ -4,343 +4,162 @@ declare(strict_types=1);
 
 namespace Kode\Message;
 
-use BadMethodCallException;
 use InvalidArgumentException;
 
+/**
+ * 消息响应体 - 链式调用
+ * 
+ * 支持PHP8.1+特性：
+ * - 只读属性
+ * - 混合类型
+ * - 构造函数属性提升
+ * - match表达式
+ * 
+ * @method static Message total(int|float $value) 添加总数字段
+ * @method static Message page(int $value) 添加页码字段
+ * @method static Message size(int $value) 添加每页数量字段
+ * @method static Message name(string $value) 添加名称字段
+ */
 class Message
 {
-    protected int $code = 200;
-    protected string $msg = 'success';
-    protected mixed $data = null;
-    protected array $headers = [];
-    protected array $ext = [];
-    protected array $fieldMap = [];
+    private ?int $code = null;
+    private ?string $msg = null;
+    private mixed $data = null;
+    private array $fields = [];
+    private bool $sanitize = true;
     
-    protected static array $codes = [];
-    protected static bool $initialized = false;
-    protected static ?Message $instance = null;
-    
-    private const CHAIN_METHODS = [
-        'code', 'msg', 'data', 'page', 'header', 'headers', 'ext', 'fieldMap',
-        'result', 'all', 'output', 'toArray', 'toJson', 'toXml', 'isSuccess', 'isError',
-        'isClientError', 'isServerError', 'isRedirect', 'statusCodeCategory',
-        'get', 'set', 'has', 'remove', 'reset'
+    private const HTTP_CODES = [
+        200 => 'OK', 201 => 'Created', 202 => 'Accepted', 204 => 'No Content',
+        400 => 'Bad Request', 401 => 'Unauthorized', 403 => 'Forbidden',
+        404 => 'Not Found', 405 => 'Method Not Allowed', 408 => 'Request Timeout',
+        409 => 'Conflict', 422 => 'Unprocessable Entity', 429 => 'Too Many Requests',
+        500 => 'Internal Server Error', 502 => 'Bad Gateway', 503 => 'Service Unavailable',
+        504 => 'Gateway Timeout',
     ];
     
-    public function __construct(int $code = 200, ?string $msg = null, mixed $data = null)
-    {
-        $this->code = $this->sanitizeCode($code);
-        $this->msg = $msg ?? $this->getDefaultMsg($this->code);
-        $this->data = $data;
+    private const BUSINESS_CODES = [
+        300000 => 'Token无效', 300001 => 'Token已过期', 300002 => '权限不足',
+        400000 => '参数错误', 400001 => '缺少必填参数', 400002 => '参数格式错误',
+        500000 => '数据库错误', 500001 => '数据库连接失败', 500002 => '第三方服务错误',
+        600000 => '业务逻辑错误', 600001 => '资源不存在', 600002 => '资源已存在',
+    ];
+    
+    private static array $customCodes = [];
+    
+    public function __construct(
+        public readonly bool $sanitizeEnabled = true,
+    ) {
+        $this->sanitize = $sanitizeEnabled;
     }
     
-    public static function configure(array $config): void
+    public static function code(int $code): static
     {
-        if (isset($config['codes'])) {
-            static::$codes = array_merge(static::$codes, $config['codes']);
-        }
+        return (new self())->setCode($code);
     }
     
-    public static function codes(array $codes): void
+    public static function msg(string $msg): static
     {
-        static::$codes = array_merge(static::$codes, $codes);
+        return (new self())->setMsg($msg);
     }
     
-    public static function addCode(int $code, string $msg): void
+    public static function data(mixed $data): static
     {
-        static::$codes[$code] = $msg;
+        return (new self())->setData($data);
     }
     
-    public static function removeCode(int $code): void
+    public function setCode(int $code): static
     {
-        unset(static::$codes[$code]);
-    }
-    
-    public static function clearCodes(): void
-    {
-        static::$codes = [];
-    }
-    
-    public static function getCodes(): array
-    {
-        static::ensureInitialized();
-        return static::$codes;
-    }
-    
-    public static function getMsgByCode(int $code): ?string
-    {
-        static::ensureInitialized();
-        return static::$codes[$code] ?? null;
-    }
-    
-    public static function hasCode(int $code): bool
-    {
-        static::ensureInitialized();
-        return isset(static::$codes[$code]);
-    }
-    
-    protected static function ensureInitialized(): void
-    {
-        if (!static::$initialized) {
-            static::initialize();
-            static::$initialized = true;
-        }
-    }
-    
-    protected static function initialize(): void
-    {
-        if (empty(static::$codes)) {
-            static::$codes = [
-                200 => 'success',
-                201 => 'created',
-                202 => 'accepted',
-                204 => 'no content',
-                400 => 'bad request',
-                401 => 'unauthorized',
-                403 => 'forbidden',
-                404 => 'not found',
-                405 => 'method not allowed',
-                408 => 'request timeout',
-                409 => 'conflict',
-                500 => 'internal server error',
-                501 => 'not implemented',
-                502 => 'bad gateway',
-                503 => 'service unavailable',
-                504 => 'gateway timeout',
-                300000 => 'token invalid',
-                300001 => 'token expired',
-                300002 => 'insufficient permissions',
-                300003 => 'account locked',
-                400000 => 'parameter error',
-                400001 => 'missing required parameter',
-                400002 => 'invalid parameter format',
-                400003 => 'parameter out of range',
-                500000 => 'database error',
-                500001 => 'database connection error',
-                500002 => 'third party service error',
-                500003 => 'cache error',
-                600000 => 'business logic error',
-                600001 => 'resource not found',
-                600002 => 'resource already exists',
-                600003 => 'operation failed',
-            ];
-        }
-    }
-    
-    protected static function getInstance(): self
-    {
-        if (static::$instance === null) {
-            static::$instance = new static();
-        }
-        return static::$instance;
-    }
-    
-    public static function clear(): void
-    {
-        static::$instance = null;
-        static::$initialized = false;
-    }
-    
-    private function chainCode(int $code): static
-    {
-        $this->code = $this->sanitizeCode($code);
-        if ($this->msg === 'success') {
-            $defaultMsg = static::getMsgByCode($this->code);
-            if ($defaultMsg) {
-                $this->msg = $defaultMsg;
-            }
+        $this->validateCode($code);
+        $this->code = $code;
+        if ($this->msg === null) {
+            $this->msg = self::getMsgByCode($code);
         }
         return $this;
     }
     
-    private function chainMsg(string $msg): static
+    public function setMsg(string $msg): static
     {
-        $this->msg = $this->sanitizeString($msg, 1000);
+        $this->msg = $this->sanitize ? $this->sanitizeString($msg) : $msg;
         return $this;
     }
     
-    private function chainData(mixed $data): static
+    public function setData(mixed $data): static
     {
-        $this->data = $this->sanitizeData($data);
+        $this->data = $this->sanitize ? $this->sanitizeData($data) : $data;
         return $this;
     }
     
-    private function chainPage(array $page): static
+    /**
+     * 魔术方法 - 支持任意链式字段
+     * 
+     * @param string $name 方法名（字段名）
+     * @param array $arguments 参数（字段值）
+     * @return static
+     */
+    public function __call(string $name, array $arguments): static
     {
-        return $this->chainExt('page', $this->sanitizeArray($page));
-    }
-    
-    private function chainHeader(string $key, string $value): static
-    {
-        $safeKey = $this->sanitizeKey($key);
-        $this->headers[$safeKey] = $this->sanitizeString($value, 500);
-        return $this;
-    }
-    
-    private function chainHeaders(array $headers): static
-    {
-        foreach ($headers as $key => $value) {
-            $this->chainHeader($key, (string)$value);
+        if ($arguments[0] !== null) {
+            $this->fields[$name] = $this->sanitize 
+                ? $this->sanitizeValue($arguments[0]) 
+                : $arguments[0];
         }
         return $this;
     }
     
-    private function chainExt(string|array $key, mixed $value = null): static
+    /**
+     * 静态魔术方法 - 支持类名::字段名()链式调用
+     * 
+     * @param string $name 方法名（字段名）
+     * @param array $arguments 参数（字段值）
+     * @return static
+     */
+    public static function __callStatic(string $name, array $arguments): static
     {
-        if (is_array($key)) {
-            foreach ($key as $k => $v) {
-                $this->chainExt($k, $v);
-            }
-            return $this;
+        $instance = new self();
+        
+        return match ($name) {
+            'result' => $instance,
+            'code' => isset($arguments[0]) ? $instance->setCode($arguments[0]) : $instance,
+            'msg' => isset($arguments[0]) ? $instance->setMsg($arguments[0]) : $instance,
+            'data' => isset($arguments[0]) ? $instance->setData($arguments[0]) : $instance,
+            default => isset($arguments[0]) ? $instance->__call($name, $arguments) : $instance,
+        };
+    }
+    
+    /**
+     * 输出数组结果
+     */
+    public function result(): array
+    {
+        $result = [];
+        
+        if ($this->code !== null) {
+            $result['code'] = $this->code;
         }
         
-        $safeKey = $this->sanitizeKey($key);
-        if (strlen($safeKey) > 100) {
-            throw new InvalidArgumentException('Extension key too long');
+        if ($this->msg !== null) {
+            $result['msg'] = $this->msg;
         }
-        
-        $this->ext[$safeKey] = $this->sanitizeData($value);
-        return $this;
-    }
-    
-    private function chainFieldMap(array $map): static
-    {
-        $this->fieldMap = $this->sanitizeArray($map);
-        return $this;
-    }
-    
-    private function chainAll(): array
-    {
-        return $this->chainResult();
-    }
-    
-    private function chainResult(array $fields = []): array
-    {
-        $map = array_merge($this->fieldMap, $this->sanitizeArray($fields));
-        
-        $codeKey = $map['code'] ?? 'code';
-        $msgKey = $map['msg'] ?? 'msg';
-        $dataKey = $map['data'] ?? 'data';
-        
-        $result = [
-            $codeKey => $this->code,
-            $msgKey => $this->msg,
-        ];
         
         if ($this->data !== null) {
-            $result[$dataKey] = $this->data;
+            $result['data'] = $this->data;
         }
         
-        if (!empty($this->headers)) {
-            $result['_headers'] = $this->headers;
-        }
-        
-        foreach ($this->ext as $key => $value) {
-            $resultKey = $map[$key] ?? $key;
-            $result[$resultKey] = $value;
+        foreach ($this->fields as $key => $value) {
+            $result[$key] = $value;
         }
         
         return $result;
     }
     
-    private function chainOutput(array $fields = []): array
-    {
-        return $this->chainResult($fields);
-    }
-    
-    private function chainToArray(): array
-    {
-        return $this->chainResult();
-    }
-    
-    private function chainToJson(int $options = JSON_UNESCAPED_UNICODE): string
-    {
-        return json_encode($this->chainResult(), $options);
-    }
-    
-    private function chainToXml(string $root = 'response'): string
-    {
-        return $this->arrayToXml($this->chainResult(), $root);
-    }
-    
-    private function chainIsSuccess(): bool
-    {
-        return $this->code >= 200 && $this->code < 300;
-    }
-    
-    private function chainIsError(): bool
-    {
-        return $this->code >= 400;
-    }
-    
-    private function chainIsClientError(): bool
-    {
-        return $this->code >= 400 && $this->code < 500;
-    }
-    
-    private function chainIsServerError(): bool
-    {
-        return $this->code >= 500;
-    }
-    
-    private function chainIsRedirect(): bool
-    {
-        return $this->code >= 300 && $this->code < 400;
-    }
-    
-    private function chainStatusCodeCategory(): string
-    {
-        return match (true) {
-            $this->code >= 100 && $this->code < 200 => 'informational',
-            $this->code >= 200 && $this->code < 300 => 'success',
-            $this->code >= 300 && $this->code < 400 => 'redirect',
-            $this->code >= 400 && $this->code < 500 => 'client_error',
-            $this->code >= 500 && $this->code < 600 => 'server_error',
-            default => 'unknown'
-        };
-    }
-    
-    private function chainGet(string $key, mixed $default = null): mixed
-    {
-        return $this->ext[$key] ?? $default;
-    }
-    
-    private function chainSet(string $key, mixed $value): static
-    {
-        $this->ext[$key] = $value;
-        return $this;
-    }
-    
-    private function chainHas(string $key): bool
-    {
-        return isset($this->ext[$key]);
-    }
-    
-    private function chainRemove(string $key): static
-    {
-        unset($this->ext[$key]);
-        return $this;
-    }
-    
-    private function chainReset(): static
-    {
-        $this->code = 200;
-        $this->msg = 'success';
-        $this->data = null;
-        $this->headers = [];
-        $this->ext = [];
-        $this->fieldMap = [];
-        return $this;
-    }
-    
     public function toArray(): array
     {
-        return $this->chainResult();
+        return $this->result();
     }
     
-    public function toJson(int $options = JSON_UNESCAPED_UNICODE): string
+    public function toJson(int $options = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES): string
     {
-        return json_encode($this->chainResult(), $options);
+        return json_encode($this->result(), $options);
     }
     
     public function __toString(): string
@@ -348,183 +167,155 @@ class Message
         return $this->toJson();
     }
     
-    public function toXml(string $root = 'response'): string
-    {
-        return $this->arrayToXml($this->chainResult(), $root);
-    }
-    
     public function isSuccess(): bool
     {
-        return $this->chainIsSuccess();
+        return $this->code >= 200 && $this->code < 300;
     }
     
     public function isError(): bool
     {
-        return $this->chainIsError();
+        return $this->code >= 400;
     }
     
     public function isClientError(): bool
     {
-        return $this->chainIsClientError();
+        return $this->code >= 400 && $this->code < 500;
     }
     
     public function isServerError(): bool
     {
-        return $this->chainIsServerError();
+        return $this->code >= 500;
     }
     
-    public function isRedirect(): bool
+    public static function success(mixed $data = null, ?string $msg = null): static
     {
-        return $this->chainIsRedirect();
+        $instance = new self();
+        $instance->setCode(200);
+        $instance->setMsg($msg ?? '操作成功');
+        if ($data !== null) {
+            $instance->setData($data);
+        }
+        return $instance;
     }
     
-    public function statusCodeCategory(): string
+    public static function error(?string $msg = null, ?int $code = null): static
     {
-        return $this->chainStatusCodeCategory();
+        return (new self())->setCode($code ?? 400)->setMsg($msg ?? '操作失败');
     }
     
-    public function get(string $key, mixed $default = null): mixed
+    public static function notFound(?string $msg = null): static
     {
-        return $this->chainGet($key, $default);
+        return (new self())->setCode(404)->setMsg($msg ?? '资源不存在');
     }
     
-    public function set(string $key, mixed $value): static
+    public static function unauthorized(?string $msg = null): static
     {
-        return $this->chainSet($key, $value);
+        return (new self())->setCode(401)->setMsg($msg ?? '未授权');
     }
     
-    public function has(string $key): bool
+    public static function forbidden(?string $msg = null): static
     {
-        return $this->chainHas($key);
+        return (new self())->setCode(403)->setMsg($msg ?? '禁止访问');
     }
     
-    public function remove(string $key): static
+    public static function serverError(?string $msg = null): static
     {
-        return $this->chainRemove($key);
+        return (new self())->setCode(500)->setMsg($msg ?? '服务器错误');
     }
     
-    public function reset(): static
+    /**
+     * 添加自定义状态码映射
+     * 
+     * @param int $code 状态码（支持正负数）
+     * @param string $msg 状态消息
+     */
+    public static function addCode(int $code, string $msg): void
     {
-        return $this->chainReset();
+        self::$customCodes[$code] = $msg;
     }
     
-    protected function getDefaultMsg(int $code): string
+    /**
+     * 批量添加自定义状态码映射
+     * 
+     * @param array $codes 状态码映射数组 [code => msg, ...]
+     */
+    public static function codes(array $codes): void
     {
-        return static::getMsgByCode($code) ?? match ($code) {
-            200 => 'success',
-            400 => '操作失败',
-            401 => '未授权',
-            403 => '禁止访问',
-            404 => '资源不存在',
-            500 => '服务器错误',
-            default => '操作完成'
+        self::$customCodes = [...self::$customCodes, ...$codes];
+    }
+    
+    /**
+     * 获取状态码对应的默认消息
+     * 
+     * @param int $code 状态码
+     * @return string|null 状态消息，未找到返回null
+     */
+    public static function getMsgByCode(int $code): ?string
+    {
+        return self::$customCodes[$code] 
+            ?? self::BUSINESS_CODES[$code] 
+            ?? self::HTTP_CODES[$code] 
+            ?? null;
+    }
+    
+    /**
+     * 清除所有自定义状态码
+     */
+    public static function clearCodes(): void
+    {
+        self::$customCodes = [];
+    }
+    
+    /**
+     * 验证状态码范围
+     */
+    private function validateCode(int $code): void
+    {
+        if ($code < -999999 || $code > 999999) {
+            throw new InvalidArgumentException('Code must be between -999999 and 999999');
+        }
+    }
+    
+    /**
+     * XSS防护 - 字符串消毒
+     */
+    private function sanitizeString(string $str): string
+    {
+        $str = trim($str);
+        if (strlen($str) > 1000) {
+            $str = substr($str, 0, 1000);
+        }
+        return htmlspecialchars($str, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+    
+    /**
+     * 递归消毒数据
+     */
+    private function sanitizeData(mixed $data): mixed
+    {
+        return match (true) {
+            is_string($data) => $this->sanitizeString($data),
+            is_array($data) => $this->sanitizeArray($data),
+            is_int($data), is_float($data), is_bool($data) => $data,
+            is_null($data) => null,
+            default => $data,
         };
     }
     
-    protected function sanitizeCode(int $code): int
-    {
-        if ($code < 1 || $code > 999999) {
-            throw new InvalidArgumentException('Code must be between 1 and 999999');
-        }
-        return $code;
-    }
-    
-    protected function sanitizeString(string $str, int $maxLength = 1000): string
-    {
-        $str = trim($str);
-        if (strlen($str) > $maxLength) {
-            $str = substr($str, 0, $maxLength);
-        }
-        return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
-    }
-    
-    protected function sanitizeKey(string $key): string
-    {
-        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $key)) {
-            throw new InvalidArgumentException("Invalid key: {$key}");
-        }
-        return $key;
-    }
-    
-    protected function sanitizeData(mixed $data): mixed
-    {
-        if (is_string($data)) {
-            return $this->sanitizeString($data);
-        }
-        if (is_array($data)) {
-            return $this->sanitizeArray($data);
-        }
-        return $data;
-    }
-    
-    protected function sanitizeArray(array $arr): array
+    private function sanitizeArray(array $arr): array
     {
         $result = [];
         foreach ($arr as $key => $value) {
-            $safeKey = $this->sanitizeKey((string)$key);
-            $result[$safeKey] = $this->sanitizeData($value);
+            if (is_string($key)) {
+                $key = preg_replace('/[^a-zA-Z0-9_]/', '_', $key) ?: $key;
+            }
+            $result[$key] = $this->sanitizeData($value);
         }
         return $result;
     }
     
-    protected function arrayToXml(array $data, string $root, int $depth = 0): string
+    private function sanitizeValue(mixed $value): mixed
     {
-        if ($depth > 10) {
-            return '';
-        }
-        
-        $indent = str_repeat('  ', $depth);
-        $xml = "{$indent}<{$root}>";
-        
-        foreach ($data as $key => $value) {
-            $safeKey = preg_replace('/[^a-zA-Z0-9_]/', '_', (string)$key);
-            
-            if (is_array($value)) {
-                $xml .= "\n" . $this->arrayToXml($value, $safeKey, $depth + 1);
-                $xml .= "\n{$indent}";
-            } else {
-                $xml .= "<{$safeKey}>" . htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8') . "</{$safeKey}>";
-            }
-        }
-        
-        $xml .= "</{$root}>";
-        return $xml;
-    }
-    
-    public static function __callStatic(string $name, array $arguments): mixed
-    {
-        $instance = static::getInstance();
-        
-        if ($name === 'result') {
-            $instance->chainReset();
-            return $instance->chainResult(...$arguments);
-        }
-        
-        $methodName = 'chain' . ucfirst($name);
-        if (in_array($name, self::CHAIN_METHODS, true) && method_exists($instance, $methodName)) {
-            $instance->chainReset();
-            return $instance->$methodName(...$arguments);
-        }
-        
-        $instance->chainReset();
-        if (count($arguments) <= 1) {
-            return $instance->chainSet($name, $arguments[0] ?? null);
-        }
-        
-        throw new BadMethodCallException("Static method {$name} does not exist");
-    }
-    
-    public function __call(string $name, array $arguments): mixed
-    {
-        $methodName = 'chain' . ucfirst($name);
-        if (in_array($name, self::CHAIN_METHODS, true) && method_exists($this, $methodName)) {
-            return $this->$methodName(...$arguments);
-        }
-        
-        if (count($arguments) <= 1) {
-            return $this->chainSet($name, $arguments[0] ?? null);
-        }
-        
-        throw new BadMethodCallException("Method {$name} does not exist");
+        return $this->sanitizeData($value);
     }
 }
