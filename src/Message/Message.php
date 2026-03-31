@@ -84,6 +84,7 @@ class Message
      * 开发者自定义状态码（可覆盖默认）
      */
     private static array $customCodes = [];
+    private static ?self $instance = null;
     
     /**
      * 禁止的方法名列表（危险函数等）
@@ -115,7 +116,10 @@ class Message
      */
     public static function code(int $code): static
     {
-        return (new self())->setCode($code);
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance->setCode($code);
     }
     
     /**
@@ -123,7 +127,10 @@ class Message
      */
     public static function msg(string $msg): static
     {
-        return (new self())->setMsg($msg);
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance->setMsg($msg);
     }
     
     /**
@@ -131,7 +138,10 @@ class Message
      */
     public static function data(mixed $data): static
     {
-        return (new self())->setData($data);
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance->setData($data);
     }
     
     /**
@@ -184,14 +194,24 @@ class Message
      */
     public static function __callStatic(string $name, array $arguments): static
     {
-        $instance = new self();
+        // result() 返回当前实例，不创建新的
+        if ($name === 'result') {
+            if (self::$instance === null) {
+                self::$instance = new self();
+            }
+            return self::$instance;
+        }
+        
+        // 首次调用或result()后，创建新实例
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
         
         return match ($name) {
-            'result' => $instance,
-            'code' => isset($arguments[0]) ? $instance->setCode($arguments[0]) : $instance,
-            'msg' => isset($arguments[0]) ? $instance->setMsg($arguments[0]) : $instance,
-            'data' => isset($arguments[0]) ? $instance->setData($arguments[0]) : $instance,
-            default => isset($arguments[0]) ? $instance->__call($name, $arguments) : $instance,
+            'code' => isset($arguments[0]) ? self::$instance->setCode($arguments[0]) : self::$instance,
+            'msg' => isset($arguments[0]) ? self::$instance->setMsg($arguments[0]) : self::$instance,
+            'data' => isset($arguments[0]) ? self::$instance->setData($arguments[0]) : self::$instance,
+            default => isset($arguments[0]) ? self::$instance->__call($name, $arguments) : self::$instance,
         };
     }
     
@@ -217,6 +237,9 @@ class Message
         foreach ($this->fields as $key => $value) {
             $result[$key] = $value;
         }
+        
+        // 重置静态实例，允许下次链式调用
+        self::$instance = null;
         
         return $result;
     }

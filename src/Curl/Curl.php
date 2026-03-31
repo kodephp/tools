@@ -27,7 +27,6 @@ class Curl
     public const CONTENT_HTML = 'text/html';
 
     private static bool $php85Detected = false;
-    private static ?object $persistentShare = null;
 
     protected static array $config = [
         'timeout' => 30,
@@ -595,7 +594,7 @@ class Curl
             curl_close($ch);
 
             if ($errno) {
-                $responseObj = new Response(null, $httpCode, $contentType ?? '', $errno, $error);
+                $responseObj = new Response(null, $httpCode, (string)($contentType ?: ''), $errno, $error);
                 foreach ($this->errorCallbacks as $callback) {
                     $callback($responseObj, $this);
                 }
@@ -809,37 +808,6 @@ class Curl
         curl_multi_close($multiHandle);
 
         return $results;
-    }
-
-    private function createHandle(): mixed
-    {
-        $url = $this->buildUrl();
-        $body = $this->buildBody();
-
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => $this->method,
-            CURLOPT_HTTPHEADER => $this->buildHeaders(),
-            CURLOPT_TIMEOUT => $this->timeout,
-            CURLOPT_CONNECTTIMEOUT => $this->connectTimeout,
-            CURLOPT_POSTFIELDS => $body,
-            CURLOPT_SSL_VERIFYPEER => $this->verifySsl,
-            CURLOPT_SSL_VERIFYHOST => $this->verifySsl ? 2 : 0,
-        ]);
-
-        if (self::detectPhp85()) {
-            try {
-                $share = @\curl_share_init_persistent([]);
-                if ($share !== false) {
-                    curl_setopt($ch, CURLSHOPT_SHARE, $share);
-                }
-            } catch (Throwable) {
-            }
-        }
-
-        return $ch;
     }
 
     public static function __callStatic(string $name, array $arguments): mixed
