@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kode\Message;
 
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * 消息响应体 - 链式调用
@@ -28,23 +29,80 @@ class Message
     private array $fields = [];
     private bool $sanitize = true;
     
-    private const HTTP_CODES = [
-        200 => 'OK', 201 => 'Created', 202 => 'Accepted', 204 => 'No Content',
-        400 => 'Bad Request', 401 => 'Unauthorized', 403 => 'Forbidden',
-        404 => 'Not Found', 405 => 'Method Not Allowed', 408 => 'Request Timeout',
-        409 => 'Conflict', 422 => 'Unprocessable Entity', 429 => 'Too Many Requests',
-        500 => 'Internal Server Error', 502 => 'Bad Gateway', 503 => 'Service Unavailable',
+    /**
+     * 默认状态码映射表
+     */
+    private const CODES = [
+        // 2xx 成功
+        200 => 'OK',
+        201 => 'Created',
+        202 => 'Accepted',
+        204 => 'No Content',
+        
+        // 3xx 重定向
+        301 => 'Moved Permanently',
+        302 => 'Found',
+        304 => 'Not Modified',
+        
+        // 4xx 客户端错误
+        400 => 'Bad Request',
+        401 => 'Unauthorized',
+        403 => 'Forbidden',
+        404 => 'Not Found',
+        405 => 'Method Not Allowed',
+        408 => 'Request Timeout',
+        409 => 'Conflict',
+        422 => 'Unprocessable Entity',
+        429 => 'Too Many Requests',
+        
+        // 5xx 服务端错误
+        500 => 'Internal Server Error',
+        502 => 'Bad Gateway',
+        503 => 'Service Unavailable',
         504 => 'Gateway Timeout',
+        
+        // 业务错误码
+        300000 => 'Token无效',
+        300001 => 'Token已过期',
+        300002 => '权限不足',
+        300003 => '账户已锁定',
+        400000 => '参数错误',
+        400001 => '缺少必填参数',
+        400002 => '参数格式错误',
+        400003 => '参数超出范围',
+        500000 => '数据库错误',
+        500001 => '数据库连接失败',
+        500002 => '第三方服务错误',
+        500003 => '缓存错误',
+        600000 => '业务逻辑错误',
+        600001 => '资源不存在',
+        600002 => '资源已存在',
+        600003 => '操作失败',
     ];
     
-    private const BUSINESS_CODES = [
-        300000 => 'Token无效', 300001 => 'Token已过期', 300002 => '权限不足',
-        400000 => '参数错误', 400001 => '缺少必填参数', 400002 => '参数格式错误',
-        500000 => '数据库错误', 500001 => '数据库连接失败', 500002 => '第三方服务错误',
-        600000 => '业务逻辑错误', 600001 => '资源不存在', 600002 => '资源已存在',
-    ];
-    
+    /**
+     * 开发者自定义状态码（可覆盖默认）
+     */
     private static array $customCodes = [];
+    
+    /**
+     * 禁止的方法名列表（危险函数等）
+     */
+    private const FORBIDDEN_METHODS = [
+        'exec', 'system', 'shell_exec', 'passthru', 'popen', 'proc_open',
+        'eval', 'assert', 'create_function',
+        'unserialize', 'serialize',
+        'file', 'file_get_contents', 'file_put_contents',
+        'fopen', 'fwrite', 'fclose', 'readfile',
+        'include', 'include_once', 'require', 'require_once',
+        'mkdir', 'rmdir', 'unlink', 'rmdir',
+        'curl_exec', 'curl_multi_exec',
+        'mysql', 'mysqli', 'pg_', 'sqlite',
+        'header', 'session_', 'cookie',
+        '__construct', '__destruct', '__call', '__callStatic',
+        '__get', '__set', '__isset', '__unset',
+        '__invoke', '__toString', '__clone',
+    ];
     
     public function __construct(
         public readonly bool $sanitizeEnabled = true,
@@ -52,24 +110,35 @@ class Message
         $this->sanitize = $sanitizeEnabled;
     }
     
+    /**
+     * 设置状态码，自动获取对应消息
+     */
     public static function code(int $code): static
     {
         return (new self())->setCode($code);
     }
     
+    /**
+     * 设置消息内容
+     */
     public static function msg(string $msg): static
     {
         return (new self())->setMsg($msg);
     }
     
+    /**
+     * 设置数据
+     */
     public static function data(mixed $data): static
     {
         return (new self())->setData($data);
     }
     
+    /**
+     * 设置状态码
+     */
     public function setCode(int $code): static
     {
-        $this->validateCode($code);
         $this->code = $code;
         if ($this->msg === null) {
             $this->msg = self::getMsgByCode($code);
@@ -77,12 +146,18 @@ class Message
         return $this;
     }
     
+    /**
+     * 设置消息
+     */
     public function setMsg(string $msg): static
     {
         $this->msg = $this->sanitize ? $this->sanitizeString($msg) : $msg;
         return $this;
     }
     
+    /**
+     * 设置数据
+     */
     public function setData(mixed $data): static
     {
         $this->data = $this->sanitize ? $this->sanitizeData($data) : $data;
@@ -91,13 +166,11 @@ class Message
     
     /**
      * 魔术方法 - 支持任意链式字段
-     * 
-     * @param string $name 方法名（字段名）
-     * @param array $arguments 参数（字段值）
-     * @return static
      */
     public function __call(string $name, array $arguments): static
     {
+        $this->validateMethodName($name);
+        
         if ($arguments[0] !== null) {
             $this->fields[$name] = $this->sanitize 
                 ? $this->sanitizeValue($arguments[0]) 
@@ -108,10 +181,6 @@ class Message
     
     /**
      * 静态魔术方法 - 支持类名::字段名()链式调用
-     * 
-     * @param string $name 方法名（字段名）
-     * @param array $arguments 参数（字段值）
-     * @return static
      */
     public static function __callStatic(string $name, array $arguments): static
     {
@@ -167,77 +236,10 @@ class Message
         return $this->toJson();
     }
     
-    public function isSuccess(): bool
-    {
-        return $this->code >= 200 && $this->code < 300;
-    }
-    
-    public function isError(): bool
-    {
-        return $this->code >= 400;
-    }
-    
-    public function isClientError(): bool
-    {
-        return $this->code >= 400 && $this->code < 500;
-    }
-    
-    public function isServerError(): bool
-    {
-        return $this->code >= 500;
-    }
-    
-    public static function success(mixed $data = null, ?string $msg = null): static
-    {
-        $instance = new self();
-        $instance->setCode(200);
-        $instance->setMsg($msg ?? '操作成功');
-        if ($data !== null) {
-            $instance->setData($data);
-        }
-        return $instance;
-    }
-    
-    public static function error(?string $msg = null, ?int $code = null): static
-    {
-        return (new self())->setCode($code ?? 400)->setMsg($msg ?? '操作失败');
-    }
-    
-    public static function notFound(?string $msg = null): static
-    {
-        return (new self())->setCode(404)->setMsg($msg ?? '资源不存在');
-    }
-    
-    public static function unauthorized(?string $msg = null): static
-    {
-        return (new self())->setCode(401)->setMsg($msg ?? '未授权');
-    }
-    
-    public static function forbidden(?string $msg = null): static
-    {
-        return (new self())->setCode(403)->setMsg($msg ?? '禁止访问');
-    }
-    
-    public static function serverError(?string $msg = null): static
-    {
-        return (new self())->setCode(500)->setMsg($msg ?? '服务器错误');
-    }
-    
     /**
-     * 添加自定义状态码映射
+     * 设置/合并自定义状态码映射
      * 
-     * @param int $code 状态码（支持正负数）
-     * @param string $msg 状态消息
-     */
-    public static function addCode(int $code, string $msg): void
-    {
-        self::$customCodes[$code] = $msg;
-    }
-    
-    /**
-     * 批量添加自定义状态码映射
-     * 
-     * @param array $codes 状态码映射数组 [code => msg, ...]
+     * @param array $codes 状态码映射 [code => msg, ...]
      */
     public static function codes(array $codes): void
     {
@@ -245,17 +247,115 @@ class Message
     }
     
     /**
-     * 获取状态码对应的默认消息
+     * 从文件加载状态码配置
      * 
-     * @param int $code 状态码
-     * @return string|null 状态消息，未找到返回null
+     * @param string $filePath 配置文件路径，支持 .php, .json, .ini
+     * @return bool 加载是否成功
+     * 
+     * 示例：
+     *   Message::loadCodes('config/codes.php');
+     *   Message::loadCodes('config/codes.json');
+     */
+    public static function loadCodes(string $filePath): bool
+    {
+        if (!file_exists($filePath)) {
+            return false;
+        }
+        
+        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
+        
+        try {
+            return match ($extension) {
+                'php' => self::loadCodesFromPhp($filePath),
+                'json' => self::loadCodesFromJson($filePath),
+                'ini' => self::loadCodesFromIni($filePath),
+                default => false,
+            };
+        } catch (Throwable) {
+            return false;
+        }
+    }
+    
+    /**
+     * 从PHP文件加载
+     */
+    private static function loadCodesFromPhp(string $filePath): bool
+    {
+        $codes = require $filePath;
+        
+        if (is_array($codes)) {
+            self::codes($codes);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 从JSON文件加载
+     */
+    private static function loadCodesFromJson(string $filePath): bool
+    {
+        $content = file_get_contents($filePath);
+        $codes = json_decode($content, true);
+        
+        if (is_array($codes)) {
+            self::codes($codes);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 从INI文件加载
+     */
+    private static function loadCodesFromIni(string $filePath): bool
+    {
+        $codes = parse_ini_file($filePath, true);
+        
+        if (is_array($codes)) {
+            // INI文件可能嵌套，扁平化处理
+            $flatCodes = [];
+            foreach ($codes as $section) {
+                if (is_array($section)) {
+                    foreach ($section as $key => $value) {
+                        if (is_string($key)) {
+                            $flatCodes[(int)$key] = $value;
+                        }
+                    }
+                }
+            }
+            self::codes($flatCodes);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 获取状态码对应的消息
+     * 优先级：自定义码 > 默认码
      */
     public static function getMsgByCode(int $code): ?string
     {
-        return self::$customCodes[$code] 
-            ?? self::BUSINESS_CODES[$code] 
-            ?? self::HTTP_CODES[$code] 
-            ?? null;
+        return self::$customCodes[$code] ?? self::CODES[$code] ?? null;
+    }
+    
+    /**
+     * 获取所有默认状态码映射
+     */
+    public static function getDefaultCodes(): array
+    {
+        return self::CODES;
+    }
+    
+    /**
+     * 获取所有当前状态码映射（默认+自定义）
+     */
+    public static function getAllCodes(): array
+    {
+        return [...self::CODES, ...self::$customCodes];
     }
     
     /**
@@ -267,12 +367,34 @@ class Message
     }
     
     /**
-     * 验证状态码范围
+     * 批量设置状态码映射（完全替换默认+自定义）
      */
-    private function validateCode(int $code): void
+    public static function setCodes(array $codes): void
     {
-        if ($code < -999999 || $code > 999999) {
-            throw new InvalidArgumentException('Code must be between -999999 and 999999');
+        self::$customCodes = $codes;
+    }
+    
+    /**
+     * 验证方法名是否安全
+     */
+    private function validateMethodName(string $name): void
+    {
+        // 只允许字母、数字、下划线
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name)) {
+            throw new InvalidArgumentException("Invalid field name: {$name}");
+        }
+        
+        // 检查危险方法名
+        $lowerName = strtolower($name);
+        foreach (self::FORBIDDEN_METHODS as $forbidden) {
+            if (str_starts_with($lowerName, $forbidden)) {
+                throw new InvalidArgumentException("Forbidden field name: {$name}");
+            }
+        }
+        
+        // 限制长度
+        if (strlen($name) > 50) {
+            throw new InvalidArgumentException('Field name too long (max 50)');
         }
     }
     
@@ -307,7 +429,7 @@ class Message
         $result = [];
         foreach ($arr as $key => $value) {
             if (is_string($key)) {
-                $key = preg_replace('/[^a-zA-Z0-9_]/', '_', $key) ?: $key;
+                $key = preg_replace('/[^a-zA-Z0-9_]/', '_', $key) ?: (string)$key;
             }
             $result[$key] = $this->sanitizeData($value);
         }
