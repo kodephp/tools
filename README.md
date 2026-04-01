@@ -174,6 +174,83 @@ Crypto::hmac('数据', '密钥', 'sha256');
 | `MODE_URL_SAFE` | URL安全Base64 | URL参数传输 |
 | `MODE_COMPACT` | 十六进制 | 日志记录、调试 |
 
+### URL传输加解密
+
+URL传输时需要使用`MODE_URL_SAFE`模式，避免`+/=`等字符被URL编码：
+
+```php
+use Kode\Crypto\Crypto;
+
+// 创建URL安全加密实例
+$crypto = new Crypto('your_secret_key_16chars');
+$crypto->mode(Crypto::MODE_URL_SAFE);
+
+// 加密数据
+$original = '{"user_id":123,"token":"jwt..."}';
+$encrypted = $crypto->encrypt($original);
+// 加密结果: r50Mzv6rf1t5q6AJvQt5Pc-Zqy5ykcrgX8jSEgGi...
+
+// 构建URL
+$url = 'https://api.example.com/user?' . http_build_query(['data' => $encrypted]);
+
+// 服务器端解密
+$received = $_GET['data'] ?? $encrypted;
+$decrypted = $crypto->decrypt($received);
+// 解密结果: {"user_id":123,"token":"jwt..."}
+```
+
+### 安全防护
+
+#### XSS防护
+
+使用`Str::xssSafe()`防护XSS攻击：
+
+```php
+use Kode\String\Str;
+
+// XSS攻击示例
+$attacks = [
+    '<script>alert("XSS")</script>',
+    'javascript:alert("XSS")',
+    '<img src=x onerror=alert("XSS")>',
+];
+
+// 防护处理
+foreach ($attacks as $input) {
+    $safe = Str::xssSafe($input);
+    echo $safe;
+    // 输出: &lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;
+}
+```
+
+#### SQL注入防护
+
+使用`Str::sqlSafe()`防护SQL注入：
+
+```php
+use Kode\String\Str;
+
+$userInput = "'; DROP TABLE users; --";
+$safe = Str::sqlSafe($userInput);
+// 输出: \'\'; DROP TABLE users; --
+
+// 严格模式（去除所有非字母数字字符）
+$strict = Str::sqlSafe($userInput, true);
+// 输出: DROPTABLEUSERS
+```
+
+#### HTML转义
+
+使用`Str::htmlEscape()`转义HTML特殊字符：
+
+```php
+use Kode\String\Str;
+
+$html = '<div class="test">Hello & "World"</div>';
+$escaped = Str::htmlEscape($html);
+// 输出: &lt;div class=&quot;test&quot;&gt;Hello &amp; &quot;World&quot;&lt;/div&gt;
+```
+
 ### 方法说明
 
 | 方法 | 说明 | 示例 |
