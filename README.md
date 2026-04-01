@@ -107,9 +107,9 @@ Message::loadCodes('config/codes.php');
 ```php
 use Kode\Crypto\Crypto;
 
-// AES加密解密
-$encrypted = (new Crypto('mykey123456789'))->encrypt('敏感数据');
-$decrypted = (new Crypto('mykey123456789'))->decrypt($encrypted);
+// AES加密解密（密钥至少16字符）
+$encrypted = (new Crypto('mykey1234567890'))->encrypt('敏感数据');
+$decrypted = (new Crypto('mykey1234567890'))->decrypt($encrypted);
 
 // MD5哈希（加盐）
 $md5 = Crypto::md5('123456', 'salt');

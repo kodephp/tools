@@ -45,6 +45,8 @@ class Crypto extends Base
     private static bool $php85Detected = false;
     /** PHP8.5+标志 */
     private static bool $isPhp85 = false;
+    /** 单例实例 */
+    private static ?self $instance = null;
 
     /** 全局配置 */
     protected static array $config = [
@@ -395,12 +397,12 @@ class Crypto extends Base
     /**
      * 密码哈希
      * @param string $str 密码
-     * @param int $algo 算法
+     * @param int|null $algo 算法（默认PASSWORD_DEFAULT）
      * @return string 哈希值
      */
-    public static function passwordHash(string $str, int $algo = PASSWORD_DEFAULT): string
+    public static function passwordHash(string $str, ?int $algo = null): string
     {
-        return password_hash($str, $algo);
+        return password_hash($str, $algo ?? PASSWORD_DEFAULT);
     }
 
     /**
@@ -417,12 +419,12 @@ class Crypto extends Base
     /**
      * 检查密码是否需要重新哈希
      * @param string $hash 哈希值
-     * @param int $algo 算法
+     * @param int|null $algo 算法（默认PASSWORD_DEFAULT）
      * @return bool 是否需要重新哈希
      */
-    public static function passwordNeedsRehash(string $hash, int $algo = PASSWORD_DEFAULT): bool
+    public static function passwordNeedsRehash(string $hash, ?int $algo = null): bool
     {
-        return password_needs_rehash($hash, $algo);
+        return password_needs_rehash($hash, $algo ?? PASSWORD_DEFAULT);
     }
 
     /**
