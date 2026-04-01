@@ -1,6 +1,6 @@
 {
     "name": "kode/tools",
-    "description": "PHP8.1+通用工具包，支持PHP8.5新特性（管道、持久化cURL等），包含消息体、数组处理、字符串处理、时间处理、加解密、IP、地理计算、Curl、二维码生成、全局辅助函数等",
+    "description": "PHP8.1+通用工具包，包含消息体、数组处理、字符串处理、时间处理、加解密、IP、地理计算、Curl、二维码、全局辅助函数等",
     "type": "library",
     "license": "MIT",
     "version": "1.7.0",
