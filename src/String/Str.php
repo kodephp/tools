@@ -323,50 +323,6 @@ class Str
     }
 
     /**
-     * 字符串转URL编码
-     * @param string $str 字符串
-     * @param string $encoding 编码
-     * @return string URL编码后的字符串
-     */
-    public static function urlEncode(string $str, string $encoding = 'UTF-8'): string
-    {
-        return rawurlencode($str);
-    }
-
-    /**
-     * URL编码转字符串
-     * @param string $str URL编码后的字符串
-     * @return string 解码后的字符串
-     */
-    public static function urlDecode(string $str): string
-    {
-        return rawurldecode($str);
-    }
-
-    /**
-     * 字符串转Base64编码
-     * @param string $str 字符串
-     * @param string $encoding 编码
-     * @return string Base64编码后的字符串
-     */
-    public static function base64Encode(string $str, string $encoding = 'UTF-8'): string
-    {
-        return base64_encode($str);
-    }
-
-    /**
-     * Base64编码转字符串
-     * @param string $str Base64编码后的字符串
-     * @param string $encoding 编码
-     * @return string 解码后的字符串
-     */
-    public static function base64Decode(string $str, string $encoding = 'UTF-8'): string
-    {
-        $decoded = base64_decode($str);
-        return mb_convert_encoding($decoded, $encoding, 'UTF-8');
-    }
-
-    /**
      * 字符串转JSON
      * @param mixed $data 数据
      * @param int $options JSON选项
