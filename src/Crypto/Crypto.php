@@ -9,42 +9,72 @@ use RuntimeException;
 use InvalidArgumentException;
 use BadMethodCallException;
 
+/**
+ * 加解密工具类
+ * 支持AES-256-GCM加密、MD5/SHA系列哈希、密码哈希、HMAC等
+ */
 class Crypto extends Base
 {
+    /** 自动选择加密引擎 */
     public const ENGINE_AUTO = 'auto';
+    /** Sodium加密引擎 */
     public const ENGINE_SODIUM = 'sodium';
+    /** OpenSSL加密引擎 */
     public const ENGINE_OPENSSL = 'openssl';
 
+    /** 标准Base64输出 */
     public const MODE_STANDARD = 'standard';
+    /** URL安全Base64输出 */
     public const MODE_URL_SAFE = 'url_safe';
+    /** 十六进制输出 */
     public const MODE_COMPACT = 'compact';
 
+    /** 默认密钥（仅用于开发环境） */
     public const DEFAULT_KEY = 'kode_default_key_2025';
+    /** 默认加密算法 */
     public const DEFAULT_ALGO = 'aes-256-gcm';
-    
+
+    /** 密钥最小长度 */
     private const MIN_KEY_LENGTH = 16;
+    /** 密钥最大长度 */
     private const MAX_KEY_LENGTH = 64;
+    /** 数据最大长度（字节） */
     private const MAX_DATA_LENGTH = 10_000_000;
 
+    /** PHP版本检测标志 */
     private static bool $php85Detected = false;
-    private static ?self $instance = null;
-    
+    /** PHP8.5+标志 */
+    private static bool $isPhp85 = false;
+
+    /** 全局配置 */
     protected static array $config = [
         'engine' => self::ENGINE_AUTO,
         'mode' => self::MODE_STANDARD,
     ];
 
+    /** 当前密钥 */
     private string $key;
+    /** 当前引擎 */
     private string $engine;
+    /** 当前模式 */
     private string $mode;
 
+    /**
+     * 构造函数
+     * @param string|null $key 加密密钥
+     * @param string|null $engine 加密引擎
+     * @param string|null $mode 输出模式
+     */
     public function __construct(?string $key = null, ?string $engine = null, ?string $mode = null)
     {
         $this->key = $this->sanitizeKey($key ?? self::DEFAULT_KEY);
         $this->engine = $this->detectEngine($engine ?? static::getConfig('engine', self::ENGINE_AUTO));
         $this->mode = $mode ?? static::getConfig('mode', self::MODE_STANDARD);
     }
-    
+
+    /**
+     * 初始化配置
+     */
     protected static function initialize(): void
     {
         if (empty(static::$config)) {
@@ -55,15 +85,24 @@ class Crypto extends Base
         }
     }
 
+    /**
+     * 检测PHP版本是否为8.5+
+     * @return bool 是否为PHP8.5+
+     */
     private static function detectPhp85(): bool
     {
         if (!self::$php85Detected) {
             self::$php85Detected = true;
-            return PHP_VERSION_ID >= 80500;
+            self::$isPhp85 = PHP_VERSION_ID >= 80500;
         }
-        return PHP_VERSION_ID >= 80500;
+        return self::$isPhp85;
     }
 
+    /**
+     * 检测可用加密引擎
+     * @param string $engine 引擎名称
+     * @return string 可用引擎
+     */
     private function detectEngine(string $engine): string
     {
         if ($engine === self::ENGINE_SODIUM && extension_loaded('sodium')) {
@@ -83,6 +122,11 @@ class Crypto extends Base
         throw new RuntimeException('No encryption engine available');
     }
 
+    /**
+     * 验证并清理密钥
+     * @param string $key 密钥
+     * @return string 清理后的密钥
+     */
     private function sanitizeKey(string $key): string
     {
         $key = trim($key);
@@ -95,11 +139,21 @@ class Crypto extends Base
         return $key;
     }
 
+    /**
+     * 派生密钥（SHA256）
+     * @param string $key 原始密钥
+     * @return string 派生后的密钥
+     */
     private function deriveKey(string $key): string
     {
         return hash('sha256', $key, true);
     }
 
+    /**
+     * 验证数据长度
+     * @param string $data 数据
+     * @return string 验证通过的数据
+     */
     private function sanitizeData(string $data): string
     {
         if (strlen($data) > self::MAX_DATA_LENGTH) {
@@ -107,17 +161,27 @@ class Crypto extends Base
         }
         return $data;
     }
-    
+
+    /**
+     * 加密数据
+     * @param string $data 待加密数据
+     * @return string 加密后的数据
+     */
     public function encrypt(string $data): string
     {
         $data = $this->sanitizeData($data);
-        
+
         if ($this->engine === self::ENGINE_SODIUM) {
             return $this->encryptSodium($data);
         }
         return $this->encryptOpenSSL($data);
     }
 
+    /**
+     * 解密数据
+     * @param string $encrypted 待解密数据
+     * @return string 解密后的数据
+     */
     public function decrypt(string $encrypted): string
     {
         if ($this->engine === self::ENGINE_SODIUM) {
@@ -125,25 +189,45 @@ class Crypto extends Base
         }
         return $this->decryptOpenSSL($encrypted);
     }
-    
+
+    /**
+     * 设置密钥（链式调用）
+     * @param string $key 密钥
+     * @return static
+     */
     public function key(string $key): static
     {
         $this->key = $this->sanitizeKey($key);
         return $this;
     }
-    
+
+    /**
+     * 设置引擎（链式调用）
+     * @param string $engine 引擎
+     * @return static
+     */
     public function engine(string $engine): static
     {
         $this->engine = $this->detectEngine($engine);
         return $this;
     }
-    
+
+    /**
+     * 设置模式（链式调用）
+     * @param string $mode 模式
+     * @return static
+     */
     public function mode(string $mode): static
     {
         $this->mode = $mode;
         return $this;
     }
 
+    /**
+     * 使用Sodium加密
+     * @param string $data 数据
+     * @return string 加密数据
+     */
     private function encryptSodium(string $data): string
     {
         $key = $this->deriveKey($this->key);
@@ -155,7 +239,7 @@ class Crypto extends Base
         }
 
         $payload = $nonce . $encrypted;
-        
+
         return match ($this->mode) {
             self::MODE_URL_SAFE => rtrim(strtr(base64_encode($payload), '+/', '-_'), '='),
             self::MODE_COMPACT => bin2hex($payload),
@@ -163,6 +247,11 @@ class Crypto extends Base
         };
     }
 
+    /**
+     * 使用Sodium解密
+     * @param string $encrypted 加密数据
+     * @return string 解密数据
+     */
     private function decryptSodium(string $encrypted): string
     {
         $payload = match ($this->mode) {
@@ -176,7 +265,7 @@ class Crypto extends Base
         }
 
         $nonceLength = SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES;
-        
+
         if (strlen($payload) < $nonceLength) {
             throw new RuntimeException('Encrypted data too short');
         }
@@ -194,6 +283,11 @@ class Crypto extends Base
         return $decrypted;
     }
 
+    /**
+     * 使用OpenSSL加密
+     * @param string $data 数据
+     * @return string 加密数据
+     */
     private function encryptOpenSSL(string $data): string
     {
         $key = $this->deriveKey($this->key);
@@ -217,6 +311,11 @@ class Crypto extends Base
         };
     }
 
+    /**
+     * 使用OpenSSL解密
+     * @param string $encrypted 加密数据
+     * @return string 解密数据
+     */
     private function decryptOpenSSL(string $encrypted): string
     {
         $payload = match ($this->mode) {
@@ -250,7 +349,13 @@ class Crypto extends Base
 
         return $decrypted;
     }
-    
+
+    /**
+     * MD5哈希（支持加盐）
+     * @param string $str 字符串
+     * @param string $salt 盐值
+     * @return string 哈希值
+     */
     public static function md5(string $str, string $salt = ''): string
     {
         if (strlen($salt) > 0) {
@@ -258,7 +363,13 @@ class Crypto extends Base
         }
         return hash('md5', $str);
     }
-    
+
+    /**
+     * SHA1哈希（支持加盐）
+     * @param string $str 字符串
+     * @param string $salt 盐值
+     * @return string 哈希值
+     */
     public static function sha1(string $str, string $salt = ''): string
     {
         if (strlen($salt) > 0) {
@@ -266,7 +377,13 @@ class Crypto extends Base
         }
         return hash('sha1', $str);
     }
-    
+
+    /**
+     * SHA256哈希（支持加盐）
+     * @param string $str 字符串
+     * @param string $salt 盐值
+     * @return string 哈希值
+     */
     public static function sha256(string $str, string $salt = ''): string
     {
         if (strlen($salt) > 0) {
@@ -274,22 +391,47 @@ class Crypto extends Base
         }
         return hash('sha256', $str);
     }
-    
+
+    /**
+     * 密码哈希
+     * @param string $str 密码
+     * @param int $algo 算法
+     * @return string 哈希值
+     */
     public static function passwordHash(string $str, int $algo = PASSWORD_DEFAULT): string
     {
         return password_hash($str, $algo);
     }
-    
+
+    /**
+     * 密码验证
+     * @param string $str 密码
+     * @param string $hash 哈希值
+     * @return bool 是否匹配
+     */
     public static function passwordVerify(string $str, string $hash): bool
     {
         return password_verify($str, $hash);
     }
-    
+
+    /**
+     * 检查密码是否需要重新哈希
+     * @param string $hash 哈希值
+     * @param int $algo 算法
+     * @return bool 是否需要重新哈希
+     */
     public static function passwordNeedsRehash(string $hash, int $algo = PASSWORD_DEFAULT): bool
     {
         return password_needs_rehash($hash, $algo);
     }
-    
+
+    /**
+     * HMAC哈希
+     * @param string $data 数据
+     * @param string $key 密钥
+     * @param string $algo 算法
+     * @return string HMAC值
+     */
     public static function hmac(string $data, string $key, string $algo = 'sha256'): string
     {
         if (strlen($key) < 16) {
@@ -297,17 +439,35 @@ class Crypto extends Base
         }
         return hash_hmac($algo, $data, $key);
     }
-    
+
+    /**
+     * 通用哈希
+     * @param string $data 数据
+     * @param string $algo 算法
+     * @return string 哈希值
+     */
     public static function hash(string $data, string $algo = 'sha256'): string
     {
         return hash($algo, $data);
     }
-    
+
+    /**
+     * 恒定时间比较（防时序攻击）
+     * @param string $known 已知字符串
+     * @param string $user 用户字符串
+     * @return bool 是否相等
+     */
     public static function hashEquals(string $known, string $user): bool
     {
         return hash_equals($known, $user);
     }
-    
+
+    /**
+     * 生成随机字符串
+     * @param int $length 长度
+     * @param string $charset 字符集
+     * @return string 随机字符串
+     */
     public static function randomString(int $length = 16, string $charset = 'alphanumeric'): string
     {
         if ($length < 4 || $length > 256) {
@@ -333,15 +493,24 @@ class Crypto extends Base
 
         return $result;
     }
-    
+
+    /**
+     * 生成随机Token
+     * @param int $length 长度
+     * @return string Token
+     */
     public static function token(int $length = 32): string
     {
-        if (self::detectPhp85() && PHP_VERSION_ID >= 80500) {
+        if (self::detectPhp85()) {
             return bin2hex(random_bytes($length / 2));
         }
         return bin2hex(random_bytes(max(16, $length / 2)));
     }
-    
+
+    /**
+     * 生成UUID v4
+     * @return string UUID
+     */
     public static function uuid(): string
     {
         $data = random_bytes(16);
@@ -349,24 +518,44 @@ class Crypto extends Base
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
-    
+
+    /**
+     * 生成订单号
+     * @param string $prefix 前缀
+     * @return string 订单号
+     */
     public static function orderId(string $prefix = ''): string
     {
         $timestamp = date('YmdHis');
         $random = random_int(1000, 9999);
         return $prefix . $timestamp . $random;
     }
-    
+
+    /**
+     * 生成邀请码
+     * @param int $length 长度
+     * @return string 邀请码
+     */
     public static function inviteCode(int $length = 6): string
     {
         return self::randomString($length, 'alphanumeric');
     }
-    
+
+    /**
+     * 生成验证码
+     * @param int $length 长度
+     * @return string 验证码
+     */
     public static function verifyCode(int $length = 6): string
     {
         return self::randomString($length, 'numeric');
     }
-    
+
+    /**
+     * 获取单例实例
+     * @param string|null $key 密钥
+     * @return static 实例
+     */
     public static function getInstance(?string $key = null): static
     {
         if (self::$instance === null || $key !== null) {
@@ -374,13 +563,22 @@ class Crypto extends Base
         }
         return self::$instance;
     }
-    
+
+    /**
+     * 重置单例
+     */
     public static function reset(): void
     {
         self::$instance = null;
         parent::reset();
     }
 
+    /**
+     * 静态方法调用
+     * @param string $name 方法名
+     * @param array $arguments 参数
+     * @return mixed
+     */
     public static function __callStatic(string $name, array $arguments): mixed
     {
         $staticMethods = [
@@ -388,26 +586,32 @@ class Crypto extends Base
             'passwordNeedsRehash', 'hmac', 'hash', 'hashEquals',
             'randomString', 'token', 'uuid', 'orderId', 'inviteCode', 'verifyCode'
         ];
-        
+
         if (in_array($name, $staticMethods, true)) {
             return static::$name(...$arguments);
         }
-        
+
         if ($name === 'encrypt' || $name === 'decrypt') {
             return (new static())->$name(...$arguments);
         }
-        
+
         return parent::__callStatic($name, $arguments);
     }
 
+    /**
+     * 实例方法调用
+     * @param string $name 方法名
+     * @param array $arguments 参数
+     * @return mixed
+     */
     public function __call(string $name, array $arguments): mixed
     {
         $methods = ['encrypt', 'decrypt', 'key', 'engine', 'mode'];
-        
+
         if (in_array($name, $methods, true)) {
             return $this->$name(...$arguments);
         }
-        
+
         return parent::__call($name, $arguments);
     }
 }
