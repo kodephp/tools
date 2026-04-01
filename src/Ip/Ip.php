@@ -105,6 +105,16 @@ class Ip
     }
 
     /**
+     * 检查IP地址是否为公网地址
+     * @param string $ip 要检查的IP地址
+     * @return bool 如果是公网IP则返回true
+     */
+    public static function isPublic(string $ip): bool
+    {
+        return self::isValid($ip) && !self::isPrivate($ip);
+    }
+
+    /**
      * 获取IP地址版本
      * @param string $ip IP地址
      * @return int|null 4, 6, 如果无效则返回null

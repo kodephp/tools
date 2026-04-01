@@ -886,28 +886,46 @@ arr_find([1, 2, 3], fn($n) => $n > 1);
 // 结果: 2
 arr_random([1, 2, 3]);
 // 结果: 随机一个元素
+arr_deep_merge(['a' => 1], ['b' => 2]);
+// 结果: ['a' => 1, 'b' => 2]
+arr_multi_sort($array, ['created_at'], ['desc']);
+// 结果: 排序后的数组
 
 // 字符串函数
 str_mask_phone('13800138000');
 // 结果: 138****8000
-str_mask_email('a@b.com');
-// 结果: a***@b.com
+str_mask_email('user@example.com');
+// 结果: us***@example.com
+str_mask_id_card('110101199001011234');
+// 结果: 110101********1234
 str_to_base64('hello');
 // 结果: aGVsbG8=
 str_from_base64('aGVsbG8=');
 // 结果: hello
-str_truncate('abcdef', 3);
-// 结果: abc...
+str_truncate('abcdefghijk', 5);
+// 结果: abcde...
 str_camel('hello_world');
 // 结果: helloWorld
+str_snake('helloWorld');
+// 结果: hello_world
+str_starts_with('hello', 'he');
+// 结果: true
+str_ends_with('hello', 'lo');
+// 结果: true
+str_contains('hello world', 'world');
+// 结果: true
 str_uuid();
-// 结果: a24e88d8-b560-4196-a34b-63626c1e489d
+// 结果: 50f53907-b0e9-4c5c-9b67-8ec6aa888c5e
 
 // 时间函数
 time_now();
-// 结果: 2026-04-01 12:00:00
+// 结果: 2026-04-01 08:40:15
 time_today();
 // 结果: 2026-04-01
+time_yesterday();
+// 结果: 2026-03-31
+time_tomorrow();
+// 结果: 2026-04-02
 time_diff_for_humans('2024-01-01');
 // 结果: 2年前
 
@@ -916,30 +934,54 @@ math_add('1.1', '2.2');
 // 结果: 3.3000000000
 math_sub('5.5', '3.3');
 // 结果: 2.2000000000
+math_mul('1.5', '2.5');
+// 结果: 3.7500000000
+math_div('10', '3');
+// 结果: 3.3333333333
 math_discount('100', '0.8');
 // 结果: 80
 math_tax('100', '0.13');
 // 结果: 13
-math_average([1, 2, 3]);
-// 结果: 2
+math_average([1, 2, 3, 4, 5]);
+// 结果: 3
+math_median([1, 2, 3, 4, 5]);
+// 结果: 3
 
 // 地理位置函数
 geo_distance(39.9042, 116.4074, 31.2304, 121.4737);
-// 结果: 1068.51
+// 结果: 1068.5058062575（北京到上海距离，单位：公里）
+geo_distance(39.9042, 116.4074, 31.2304, 121.4737, 'm');
+// 结果: 1068505.8062575（单位：米）
 geo_is_valid(39.9042, 116.4074);
 // 结果: true
 
 // IP函数
 ip_get();
-// 结果: 127.0.0.1
+// 结果: 127.0.0.1（客户端IP）
+ip_get_real();
+// 结果: 真实客户端IP（支持代理）
 ip_is_valid('192.168.1.1');
 // 结果: true
 ip_is_private('192.168.1.1');
 // 结果: true
+ip_is_public('8.8.8.8');
+// 结果: true
+
+// HTTP请求函数
+curl_get('https://api.example.com/users', ['page' => 1]);
+// 结果: Response对象
+curl_post('https://api.example.com/users', ['name' => '张三']);
+// 结果: Response对象
+
+// 二维码函数
+qr_text('https://example.com')->save('qrcode.png');
+// 结果: 保存二维码图片
+qr_wifi('MyWiFi', 'password123')->base64();
+// 结果: Base64编码的二维码
 
 // 辅助函数
 uuid();
-// 结果: a24e88d8-b560-4196-a34b-63626c1e489d
+// 结果: 06c32c05-c0e8-4e9e-b80f-3919404f923c
 random_string(16);
 // 结果: xK7d9f2mAb3cL5nP
 ```
