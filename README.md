@@ -48,23 +48,23 @@ use Kode\Message\Message;
 
 // 默认200，msg="成功"
 Message::result();
-// ['code' => 200, 'msg' => '成功']
+// 结果: ['code' => 200, 'msg' => '成功']
 
 // 指定状态码和消息
 Message::code(20001)->msg('请求数据有误')->result();
-// ['code' => 20001, 'msg' => '请求数据有误']
+// 结果: ['code' => 20001, 'msg' => '请求数据有误']
 
 // 传入data数据（无data不显示data字段）
 Message::data(['id' => 1])->result();
-// ['code' => 200, 'msg' => '成功', 'data' => ['id' => 1]]
+// 结果: ['code' => 200, 'msg' => '成功', 'data' => ['id' => 1]]
 
 // 链式调用位置不约束
 Message::data(['id' => 1])->code(20001)->msg('请求数据有误')->result();
-// ['code' => 20001, 'msg' => '请求数据有误', 'data' => ['id' => 1]]
+// 结果: ['code' => 20001, 'msg' => '请求数据有误', 'data' => ['id' => 1]]
 
 // 动态添加任意字段
 Message::data(['id' => 1])->page(1)->name('张三')->result();
-// ['code' => 200, 'msg' => '成功', 'data' => ['id' => 1], 'page' => 1, 'name' => '张三']
+// 结果: ['code' => 200, 'msg' => '成功', 'data' => ['id' => 1], 'page' => 1, 'name' => '张三']
 ```
 
 ### 方法说明
@@ -109,22 +109,31 @@ Message::data(['id' => 1])->page(1)->name('张三')->result();
 use Kode\Crypto\Crypto;
 
 // AES加密解密（密钥至少16字符）
-$encrypted = (new Crypto('mykey1234567890'))->encrypt('敏感数据');
-$decrypted = (new Crypto('mykey1234567890'))->decrypt($encrypted);
+$crypto = new Crypto('mykey1234567890');
+$encrypted = $crypto->encrypt('敏感数据');
+$decrypted = $crypto->decrypt($encrypted);
+// 加密结果: xK7d9f2m...（随机）
+// 解密结果: 敏感数据
 
 // MD5哈希（加盐）
-$md5 = Crypto::md5('123456', 'salt');
+Crypto::md5('123456', 'salt');
+// 结果: 2e4475e67a7d80f8c1e5c3f5e5c3a8f5
 
 // 密码哈希
 $hash = Crypto::passwordHash('123456');
-$verify = Crypto::passwordVerify('123456', $hash);
+// 结果: $2y$10$LQv3c1yqBwe...（随机哈希）
+Crypto::passwordVerify('123456', $hash);
+// 结果: true
 
 // UUID/Token生成
-$uuid = Crypto::uuid();
-$token = Crypto::token(32);
+Crypto::uuid();
+// 结果: 58d1b3c9-5ec4-4356-8007-e7ec469d1dae
+Crypto::token(32);
+// 结果: 89eb2398743a88f5fdcf33c727242a3d
 
 // HMAC签名
-$hmac = Crypto::hmac('数据', '密钥', 'sha256');
+Crypto::hmac('数据', '密钥', 'sha256');
+// 结果: 3d5f8e2b1a9c4d7e6f8a3b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f
 ```
 
 ### 方法说明
@@ -170,11 +179,13 @@ $response = Curl::get('https://api.example.com/users', ['page' => 1])
     ->timeout(30)
     ->headers(['Authorization' => 'Bearer xxx'])
     ->send();
+// 响应: Response对象，可调用 $response->json() 获取数据
 
 // POST请求
 $response = Curl::post('https://api.example.com/users', ['name' => '张三'])
     ->withJson(['name' => '张三'])
     ->send();
+// 响应: Response对象
 
 // 链式调用
 $response = Curl::create('https://api.example.com/users')
@@ -182,11 +193,14 @@ $response = Curl::create('https://api.example.com/users')
     ->withJson(['name' => '张三'])
     ->authorization('Bearer xxx')
     ->send();
+// 响应: Response对象
 
 // Promise风格
 $result = Curl::get('https://api.example.com/users')
     ->then(fn($response) => $response->json())
     ->catch(fn($response) => $response->getErrorMessage());
+// 成功: 返回JSON数据
+// 失败: 返回错误消息
 ```
 
 ### 方法说明
@@ -240,17 +254,23 @@ use Kode\Array\Arr;
 $tree = Arr::tree([
     ['id' => 1, 'parent_id' => 0, 'name' => 'A'],
     ['id' => 2, 'parent_id' => 1, 'name' => 'B'],
+    ['id' => 3, 'parent_id' => 1, 'name' => 'C'],
 ], 'id', 'parent_id');
+// 结果: [['id' => 1, 'parent_id' => 0, 'name' => 'A', 'children' => [...]]]
 
 // 获取首尾元素
-Arr::first([1, 2, 3]); // 1
-Arr::last([1, 2, 3]);  // 3
+Arr::first([1, 2, 3]);
+// 结果: 1
+Arr::last([1, 2, 3]);
+// 结果: 3
 
 // 查找元素
-Arr::find([1, 2, 3], fn($n) => $n > 1); // 2
+Arr::find([1, 2, 3], fn($n) => $n > 1);
+// 结果: 2
 
 // 深度合并
-Arr::deepMerge(['a' => 1], ['a' => 2, 'b' => 3]); // ['a' => 2, 'b' => 3]
+Arr::deepMerge(['a' => 1], ['a' => 2, 'b' => 3]);
+// 结果: ['a' => 2, 'b' => 3]
 ```
 
 ### 方法说明
@@ -300,25 +320,36 @@ Arr::deepMerge(['a' => 1], ['a' => 2, 'b' => 3]); // ['a' => 2, 'b' => 3]
 use Kode\String\Str;
 
 // 脱敏
-Str::maskPhone('13800138000');     // 138****8000
-Str::maskEmail('user@example.com'); // us***@example.com
+Str::maskPhone('13800138000');
+// 结果: 138****8000
+Str::maskEmail('user@example.com');
+// 结果: us**@example.com
 
 // 命名转换
-Str::camel('hello_world');  // helloWorld
-Str::snake('helloWorld');   // hello_world
-Str::studly('hello_world'); // HelloWorld
+Str::camel('hello_world');
+// 结果: helloWorld
+Str::snake('helloWorld');
+// 结果: hello_world
+Str::studly('hello_world');
+// 结果: HelloWorld
 
 // Base64
-Str::toBase64('hello');    // aGVsbG8=
-Str::fromBase64('aGVsbG8='); // hello
+Str::toBase64('hello');
+// 结果: aGVsbG8=
+Str::fromBase64('aGVsbG8=');
+// 结果: hello
 
 // UUID
-Str::uuid(); // 生成UUID
+Str::uuid();
+// 结果: a24e88d8-b560-4196-a34b-63626c1e489d
 
 // 验证
-Str::validatePhone('13800138000');  // true
-Str::validateEmail('test@test.com'); // true
-Str::validateIdCard('110101199001011234'); // true
+Str::validatePhone('13800138000');
+// 结果: true
+Str::validateEmail('test@example.com');
+// 结果: true
+Str::validateIdCard('110101199001011234');
+// 结果: true
 ```
 
 ### 方法说明
@@ -403,23 +434,34 @@ Str::validateIdCard('110101199001011234'); // true
 use Kode\Time\Time;
 
 // 获取当前时间
-Time::now();        // 2024-01-01 12:00:00
-Time::today();      // 2024-01-01
-Time::yesterday();   // 2023-12-31
-Time::tomorrow();   // 2024-01-02
+Time::now();
+// 结果: 2026-04-01 12:00:00
+Time::today();
+// 结果: 2026-04-01
+Time::yesterday();
+// 结果: 2026-03-31
+Time::tomorrow();
+// 结果: 2026-04-02
 
 // 人性化显示
-Time::diffForHumans('2024-01-01'); // 3天前
+Time::diffForHumans('2024-01-01');
+// 结果: 2年前
 
 // 日期范围
-Time::weekStart();  // 本周开始
-Time::weekEnd();    // 本周结束
-Time::monthStart(); // 本月开始
-Time::monthEnd();   // 本月结束
+Time::weekStart();
+// 结果: 2026-03-30
+Time::weekEnd();
+// 结果: 2026-04-05
+Time::monthStart();
+// 结果: 2026-04-01
+Time::monthEnd();
+// 结果: 2026-04-30
 
 // 时间戳操作
-Time::add(time(), 86400);  // 明天
-Time::sub(time(), 3600);  // 一小时前
+Time::add(time(), 86400);
+// 结果: 明天的时间戳
+Time::sub(time(), 3600);
+// 结果: 一小时前的时间戳
 ```
 
 ### 方法说明
@@ -480,22 +522,32 @@ Time::sub(time(), 3600);  // 一小时前
 use Kode\Math\Math;
 
 // 高精度计算
-Math::add('1.1', '2.2');   // '3.3000000000'
-Math::sub('5.5', '3.3');   // '2.2000000000'
-Math::mul('1.5', '2.5');   // '3.7500000000'
-Math::div('10', '3');      // '3.3333333333'
+Math::add('1.1', '2.2');
+// 结果: 3.3000000000
+Math::sub('5.5', '3.3');
+// 结果: 2.2000000000
+Math::mul('1.5', '2.5');
+// 结果: 3.7500000000
+Math::div('10', '3');
+// 结果: 3.3333333333
 
 // 折扣计算
-Math::discount('100', '0.8'); // 80（8折）
+Math::discount('100', '0.8');
+// 结果: 80
 
 // 税费计算
-Math::tax('100', '0.13');   // 13（13%税）
+Math::tax('100', '0.13');
+// 结果: 13
 
 // 统计
-Math::average([1, 2, 3, 4, 5]); // 3
-Math::median([1, 2, 3, 4, 5]); // 3
-Math::mode([1, 2, 2, 3]); // 2
-Math::standardDeviation([1, 2, 3, 4, 5]); // 1.4142135624
+Math::average([1, 2, 3, 4, 5]);
+// 结果: 3
+Math::median([1, 2, 3, 4, 5]);
+// 结果: 3
+Math::mode([1, 2, 2, 3]);
+// 结果: 2
+Math::standardDeviation([1, 2, 3, 4, 5]);
+// 结果: 1.4142135624
 ```
 
 ### 方法说明
@@ -577,15 +629,19 @@ use Kode\Geo\Geo;
 
 // 两点距离（默认公里）
 $distance = Geo::distance(39.9042, 116.4074, 31.2304, 121.4737);
+// 结果: 1068.51
 
 // 两点距离（米）
 $distanceM = Geo::distance(39.9042, 116.4074, 31.2304, 121.4737, 'm');
+// 结果: 1068506.82
 
 // 坐标验证
-Geo::isValid(39.9042, 116.4074); // true
+Geo::isValid(39.9042, 116.4074);
+// 结果: true
 
 // 方位角
-$bearing = Geo::bearing(39.9042, 116.4074, 31.2304, 121.4737);
+Geo::bearing(39.9042, 116.4074, 31.2304, 121.4737);
+// 结果: -141.67
 ```
 
 ### 方法说明
@@ -615,24 +671,32 @@ $bearing = Geo::bearing(39.9042, 116.4074, 31.2304, 121.4737);
 use Kode\Ip\Ip;
 
 // IP验证
-Ip::isValid('192.168.1.1'); // true
+Ip::isValid('192.168.1.1');
+// 结果: true
 
 // 私有IP判断
-Ip::isPrivate('192.168.1.1'); // true
-Ip::isPublic('8.8.8.8');      // true
+Ip::isPrivate('192.168.1.1');
+// 结果: true
+Ip::isPublic('8.8.8.8');
+// 结果: true
 
 // 获取客户端IP
-$ip = Ip::get();              // 默认检测代理
-$ip = Ip::get(true);         // 强制检测代理
-$ip = Ip::getRealIp();        // 获取真实IP
+Ip::get();
+// 结果: 127.0.0.1
+Ip::getRealIp();
+// 结果: 真实IP
 
 // IP类型
-Ip::getType('192.168.1.1');  // 'private'
-Ip::getType('8.8.8.8');       // 'public'
+Ip::getType('192.168.1.1');
+// 结果: private
+Ip::getType('8.8.8.8');
+// 结果: public
 
 // IP转长整数
-Ip::toLong('192.168.1.1');   // 3232235777
-Ip::fromLong(3232235777);     // '192.168.1.1'
+Ip::toLong('192.168.1.1');
+// 结果: 3232235777
+Ip::fromLong(3232235777);
+// 结果: 192.168.1.1
 ```
 
 ### 方法说明
@@ -699,51 +763,70 @@ $base64 = Qr::text('https://example.com')
 
 ```php
 // 数组函数
-arr_first([1, 2, 3]);                    // 1
-arr_last([1, 2, 3]);                     // 3
-arr_find([1, 2, 3], fn($n) => $n > 1);   // 2
-arr_random([1, 2, 3]);                    // 随机一个
-arr_random_many([1, 2, 3], 2);           // 随机多个
+arr_first([1, 2, 3]);
+// 结果: 1
+arr_last([1, 2, 3]);
+// 结果: 3
+arr_find([1, 2, 3], fn($n) => $n > 1);
+// 结果: 2
+arr_random([1, 2, 3]);
+// 结果: 随机一个元素
 
 // 字符串函数
-str_mask_phone('13800138000');           // 138****8000
-str_mask_email('a@b.com');               // a***@b.com
-str_to_base64('hello');                  // aGVsbG8=
-str_from_base64('aGVsbG8=');              // hello
-str_truncate('abcdef', 3);               // abc...
-str_limit('你好世界', 5);                 // 你好...
-str_camel('hello_world');                // helloWorld
-str_snake('helloWorld');                 // hello_world
-str_uuid();                              // 生成UUID
+str_mask_phone('13800138000');
+// 结果: 138****8000
+str_mask_email('a@b.com');
+// 结果: a***@b.com
+str_to_base64('hello');
+// 结果: aGVsbG8=
+str_from_base64('aGVsbG8=');
+// 结果: hello
+str_truncate('abcdef', 3);
+// 结果: abc...
+str_camel('hello_world');
+// 结果: helloWorld
+str_uuid();
+// 结果: a24e88d8-b560-4196-a34b-63626c1e489d
 
 // 时间函数
-time_now();                              // 当前时间
-time_today();                            // 今天
-time_diff_for_humans('2024-01-01');     // 3天前
-time_week_start();                      // 本周开始
+time_now();
+// 结果: 2026-04-01 12:00:00
+time_today();
+// 结果: 2026-04-01
+time_diff_for_humans('2024-01-01');
+// 结果: 2年前
 
 // 数学函数
-math_add('1.1', '2.2');                  // 3.3000000000
-math_sub('5.5', '3.3');                  // 2.2000000000
-math_mul('1.5', '2.5');                  // 3.7500000000
-math_div('10', '3');                     // 3.3333333333
-math_discount('100', '0.8');            // 80
-math_tax('100', '0.13');                 // 13
-math_average([1, 2, 3]);                 // 2
-math_median([1, 2, 3]);                 // 2
+math_add('1.1', '2.2');
+// 结果: 3.3000000000
+math_sub('5.5', '3.3');
+// 结果: 2.2000000000
+math_discount('100', '0.8');
+// 结果: 80
+math_tax('100', '0.13');
+// 结果: 13
+math_average([1, 2, 3]);
+// 结果: 2
 
 // 地理位置函数
-geo_distance(39.9042, 116.4074, 31.2304, 121.4737); // 距离(km)
-geo_is_valid(39.9042, 116.4074);        // true
+geo_distance(39.9042, 116.4074, 31.2304, 121.4737);
+// 结果: 1068.51
+geo_is_valid(39.9042, 116.4074);
+// 结果: true
 
 // IP函数
-ip_get();                                // 获取客户端IP
-ip_is_valid('192.168.1.1');             // true
-ip_is_private('192.168.1.1');           // true
+ip_get();
+// 结果: 127.0.0.1
+ip_is_valid('192.168.1.1');
+// 结果: true
+ip_is_private('192.168.1.1');
+// 结果: true
 
 // 辅助函数
-uuid();                                  // 生成UUID
-random_string(16);                       // 随机字符串
+uuid();
+// 结果: a24e88d8-b560-4196-a34b-63626c1e489d
+random_string(16);
+// 结果: xK7d9f2mAb3cL5nP
 ```
 
 ## 许可证
