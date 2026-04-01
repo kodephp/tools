@@ -109,11 +109,16 @@ Message::data(['id' => 1])->page(1)->name('张三')->result();
 use Kode\Crypto\Crypto;
 
 // AES加密解密（密钥至少16字符）
-$crypto = new Crypto('mykey1234567890');
+$crypto = new Crypto('mykey1234567890ab');  // 17字符密钥
 $encrypted = $crypto->encrypt('敏感数据');
+// 加密结果: JeB6LDA+LM9Yu87injOYd0ToSPfb4f/XBcEv7/qI6TWDczdBd3...
+
 $decrypted = $crypto->decrypt($encrypted);
-// 加密结果: xK7d9f2m...（随机）
 // 解密结果: 敏感数据
+
+// 特殊字符/中文/emoji完全支持
+$crypto->encrypt('你好世界 🌍');
+// 加密结果: DKJaDjUoVt8mHZHlNba/XKk1pRY9dYV23kR2FTPkhnq69Er2OP...
 
 // MD5哈希（加盐）
 Crypto::md5('123456', 'salt');
@@ -135,6 +140,39 @@ Crypto::token(32);
 Crypto::hmac('数据', '密钥', 'sha256');
 // 结果: 3d5f8e2b1a9c4d7e6f8a3b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f
 ```
+
+### 特殊字符支持
+
+加解密功能完美支持以下特殊字符：
+
+| 类型 | 示例 | 支持状态 |
+|------|------|----------|
+| 中文 | `你好世界` | ✅ 完全支持 |
+| Emoji | `😀🎉🚀` | ✅ 完全支持 |
+| 特殊符号 | `!@#$%^&*()_+-=[]{}` | ✅ 完全支持 |
+| HTML标签 | `<script>alert("xss")</script>` | ✅ 完全支持 |
+| JSON字符串 | `{"key":"value"}` | ✅ 完全支持 |
+| 多行文本 | `第一行\n第二行\r\n` | ✅ 完全支持 |
+| 空字符 | `前端\0后端` | ✅ 完全支持 |
+| SQL注入 | `'; DROP TABLE users; --` | ✅ 完全支持 |
+
+### 加密引擎
+
+自动检测并选择最优加密引擎：
+
+| 引擎 | 算法 | 说明 |
+|------|------|------|
+| Sodium (推荐) | AES-256-GCM | 优先使用（PHP8.5+） |
+| Sodium Fallback | ChaCha20-Poly1305 | Sodium不支持AES-GCM时自动切换 |
+| OpenSSL | AES-256-GCM | Sodium不可用时使用 |
+
+### 输出模式
+
+| 模式 | 说明 | 适用场景 |
+|------|------|----------|
+| `MODE_STANDARD` | 标准Base64 | 默认，数据存储 |
+| `MODE_URL_SAFE` | URL安全Base64 | URL参数传输 |
+| `MODE_COMPACT` | 十六进制 | 日志记录、调试 |
 
 ### 方法说明
 

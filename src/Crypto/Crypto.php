@@ -107,13 +107,23 @@ class Crypto extends Base
      */
     private function detectEngine(string $engine): string
     {
-        if ($engine === self::ENGINE_SODIUM && extension_loaded('sodium')) {
-            return self::ENGINE_SODIUM;
+        if ($engine === self::ENGINE_SODIUM) {
+            // 检查Sodium是否支持AES-256-GCM
+            if (extension_loaded('sodium') && defined('\\SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES')) {
+                return self::ENGINE_SODIUM;
+            }
+            // 使用ChaCha20-Poly1305作为替代
+            if (extension_loaded('sodium')) {
+                return self::ENGINE_SODIUM;
+            }
         }
         if ($engine === self::ENGINE_OPENSSL && extension_loaded('openssl')) {
             return self::ENGINE_OPENSSL;
         }
         if ($engine === self::ENGINE_AUTO) {
+            if (extension_loaded('sodium') && defined('\\SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES')) {
+                return self::ENGINE_SODIUM;
+            }
             if (extension_loaded('sodium')) {
                 return self::ENGINE_SODIUM;
             }
@@ -226,15 +236,23 @@ class Crypto extends Base
     }
 
     /**
-     * 使用Sodium加密
+     * 使用Sodium加密（优先AES-256-GCM， fallback ChaCha20-Poly1305）
      * @param string $data 数据
      * @return string 加密数据
      */
     private function encryptSodium(string $data): string
     {
         $key = $this->deriveKey($this->key);
-        $nonce = random_bytes(SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES);
-        $encrypted = sodium_crypto_aead_aes256gcm_encrypt($data, '', $nonce, $key);
+
+        // 如果支持AES-256-GCM则使用，否则使用ChaCha20-Poly1305
+        if (defined('\\SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES')) {
+            $nonce = random_bytes(\SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES);
+            $encrypted = sodium_crypto_aead_aes256gcm_encrypt($data, '', $nonce, $key);
+        } else {
+            // 使用ChaCha20-Poly1305-IETF
+            $nonce = random_bytes(\SODIUM_CRYPTO_AEAD_CHACHA20POLY1305_IETF_NPUBBYTES);
+            $encrypted = sodium_crypto_aead_chacha20poly1305_ietf_encrypt($data, '', $nonce, $key);
+        }
 
         if ($encrypted === false) {
             throw new RuntimeException('Encryption failed');
@@ -266,17 +284,25 @@ class Crypto extends Base
             throw new RuntimeException('Invalid encrypted data format');
         }
 
-        $nonceLength = SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES;
+        // 根据nonce长度判断使用的算法
+        $aesNonceLen = defined('\\SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES')
+            ? \SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES
+            : \SODIUM_CRYPTO_AEAD_CHACHA20POLY1305_IETF_NPUBBYTES;
 
-        if (strlen($payload) < $nonceLength) {
+        if (strlen($payload) < $aesNonceLen) {
             throw new RuntimeException('Encrypted data too short');
         }
 
-        $nonce = substr($payload, 0, $nonceLength);
-        $ciphertext = substr($payload, $nonceLength);
+        $nonce = substr($payload, 0, $aesNonceLen);
+        $ciphertext = substr($payload, $aesNonceLen);
         $key = $this->deriveKey($this->key);
 
-        $decrypted = sodium_crypto_aead_aes256gcm_decrypt($ciphertext, '', $nonce, $key);
+        // 根据加密时使用的算法解密
+        if (defined('\\SODIUM_CRYPTO_AEAD_AES256GCM_NPUBBYTES')) {
+            $decrypted = sodium_crypto_aead_aes256gcm_decrypt($ciphertext, '', $nonce, $key);
+        } else {
+            $decrypted = sodium_crypto_aead_chacha20poly1305_ietf_decrypt($ciphertext, '', $nonce, $key);
+        }
 
         if ($decrypted === false) {
             throw new RuntimeException('Decryption failed - data corrupted or wrong key');
