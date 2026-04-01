@@ -27,6 +27,7 @@ class Curl
     public const CONTENT_HTML = 'text/html';
 
     private static bool $php85Detected = false;
+    private static bool $isPhp85 = false;
 
     protected static array $config = [
         'timeout' => 30,
@@ -99,9 +100,9 @@ class Curl
     {
         if (!self::$php85Detected) {
             self::$php85Detected = true;
-            return PHP_VERSION_ID >= 80500;
+            self::$isPhp85 = PHP_VERSION_ID >= 80500;
         }
-        return PHP_VERSION_ID >= 80500;
+        return self::$isPhp85;
     }
 
     private function sanitizeUrl(string $url): string

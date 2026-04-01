@@ -9,13 +9,13 @@ use Throwable;
 
 /**
  * 消息响应体 - 链式调用
- * 
+ *
  * 支持灵活的链式调用方式：
  * - Message::result() - 默认200+成功
  * - Message::code(20001)->msg('错误')->result()
  * - Message::data([...])->code(20001)->result()
  * - Message::data([...])->code(20001)->msg('错误')->page(1)->name('张三')->result()
- * 
+ *
  * @method static Message page(int $value) 添加页码字段
  * @method static Message size(int $value) 添加每页数量字段
  * @method static Message name(string $value) 添加名称字段
@@ -28,9 +28,9 @@ class Message
     private mixed $data = null;
     private array $fields = [];
     private bool $sanitize = true;
-    
+
     private const DEFAULT_MSG = '成功';
-    
+
     private const CODES = [
         200 => 'OK',
         201 => 'Created',
@@ -69,10 +69,10 @@ class Message
         600002 => '资源已存在',
         600003 => '操作失败',
     ];
-    
+
     private static array $customCodes = [];
     private static ?self $instance = null;
-    
+
     private const FORBIDDEN_METHODS = [
         'exec', 'system', 'shell_exec', 'passthru', 'popen', 'proc_open',
         'eval', 'assert', 'create_function',
@@ -88,63 +88,63 @@ class Message
         '__get', '__set', '__isset', '__unset',
         '__invoke', '__toString', '__clone',
     ];
-    
+
     public function __construct(
         public readonly bool $sanitizeEnabled = true,
     ) {
         $this->sanitize = $sanitizeEnabled;
     }
-    
+
     public static function code(int $code): static
     {
         return self::getInstance()->setCode($code);
     }
-    
+
     public static function msg(string $msg): static
     {
         return self::getInstance()->setMsg($msg);
     }
-    
+
     public static function data(mixed $data): static
     {
         return self::getInstance()->setData($data);
     }
-    
+
     public function setCode(int $code): static
     {
         $this->code = $code;
         return $this;
     }
-    
+
     public function setMsg(string $msg): static
     {
         $this->msg = $this->sanitize ? $this->sanitizeString($msg) : $msg;
         return $this;
     }
-    
+
     public function setData(mixed $data): static
     {
         $this->data = $this->sanitize ? $this->sanitizeData($data) : $data;
         return $this;
     }
-    
+
     public function __call(string $name, array $arguments): static
     {
         $this->validateMethodName($name);
-        
+
         if (isset($arguments[0]) && $arguments[0] !== null) {
-            $this->fields[$name] = $this->sanitize 
-                ? $this->sanitizeValue($arguments[0]) 
+            $this->fields[$name] = $this->sanitize
+                ? $this->sanitizeValue($arguments[0])
                 : $arguments[0];
         }
         return $this;
     }
-    
+
     public static function __callStatic(string $name, array $arguments): static
     {
         return self::getInstance()->__call($name, $arguments);
     }
-    
+
     private static function getInstance(): static
     {
         if (self::$instance === null) {
@@ -152,7 +152,7 @@ class Message
         }
         return self::$instance;
     }
-    
+
     public static function result(): array
     {
         $instance = self::getInstance();
@@ -160,56 +160,56 @@ class Message
         self::$instance = null;
         return $result;
     }
-    
+
     private function buildResult(): array
     {
         $result = ['code' => $this->code];
-        
+
         if ($this->msg !== null) {
             $result['msg'] = $this->msg;
         } else {
             $result['msg'] = self::DEFAULT_MSG;
         }
-        
+
         if ($this->data !== null) {
             $result['data'] = $this->data;
         }
-        
+
         foreach ($this->fields as $key => $value) {
             $result[$key] = $value;
         }
-        
+
         return $result;
     }
-    
+
     public function toArray(): array
     {
         return $this->buildResult();
     }
-    
+
     public function toJson(int $options = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES): string
     {
         return json_encode($this->buildResult(), $options);
     }
-    
+
     public function __toString(): string
     {
         return $this->toJson();
     }
-    
+
     public static function codes(array $codes): void
     {
         self::$customCodes = [...self::$customCodes, ...$codes];
     }
-    
+
     public static function loadCodes(string $filePath): bool
     {
         if (!file_exists($filePath)) {
             return false;
         }
-        
+
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-        
+
         try {
             return match ($extension) {
                 'php' => self::loadCodesFromPhp($filePath),
@@ -221,36 +221,36 @@ class Message
             return false;
         }
     }
-    
+
     private static function loadCodesFromPhp(string $filePath): bool
     {
         $codes = require $filePath;
-        
+
         if (is_array($codes)) {
             self::codes($codes);
             return true;
         }
-        
+
         return false;
     }
-    
+
     private static function loadCodesFromJson(string $filePath): bool
     {
         $content = file_get_contents($filePath);
         $codes = json_decode($content, true);
-        
+
         if (is_array($codes)) {
             self::codes($codes);
             return true;
         }
-        
+
         return false;
     }
-    
+
     private static function loadCodesFromIni(string $filePath): bool
     {
         $codes = parse_ini_file($filePath, true);
-        
+
         if (is_array($codes)) {
             $flatCodes = [];
             foreach ($codes as $section) {
@@ -265,53 +265,53 @@ class Message
             self::codes($flatCodes);
             return true;
         }
-        
+
         return false;
     }
-    
+
     public static function getMsgByCode(int $code): ?string
     {
         return self::$customCodes[$code] ?? self::CODES[$code] ?? null;
     }
-    
+
     public static function getDefaultCodes(): array
     {
         return self::CODES;
     }
-    
+
     public static function getAllCodes(): array
     {
         return [...self::CODES, ...self::$customCodes];
     }
-    
+
     public static function clearCodes(): void
     {
         self::$customCodes = [];
     }
-    
+
     public static function setCodes(array $codes): void
     {
         self::$customCodes = $codes;
     }
-    
+
     private function validateMethodName(string $name): void
     {
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $name)) {
             throw new InvalidArgumentException("Invalid field name: {$name}");
         }
-        
+
         $lowerName = strtolower($name);
         foreach (self::FORBIDDEN_METHODS as $forbidden) {
             if (str_starts_with($lowerName, $forbidden)) {
                 throw new InvalidArgumentException("Forbidden field name: {$name}");
             }
         }
-        
+
         if (strlen($name) > 50) {
             throw new InvalidArgumentException('Field name too long (max 50)');
         }
     }
-    
+
     private function sanitizeString(string $str): string
     {
         $str = trim($str);
@@ -320,7 +320,7 @@ class Message
         }
         return htmlspecialchars($str, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
-    
+
     private function sanitizeData(mixed $data): mixed
     {
         return match (true) {
@@ -331,7 +331,7 @@ class Message
             default => $data,
         };
     }
-    
+
     private function sanitizeArray(array $arr): array
     {
         $result = [];
@@ -343,7 +343,7 @@ class Message
         }
         return $result;
     }
-    
+
     private function sanitizeValue(mixed $value): mixed
     {
         return $this->sanitizeData($value);
