@@ -12,28 +12,15 @@ use PHPUnit\Framework\TestCase;
  */
 final class SecurityTest extends TestCase
 {
-    private string $rateDir;
-
     protected function setUp(): void
     {
-        $this->rateDir = sys_get_temp_dir() . '/kode_test_rate_' . uniqid();
-        Security::setRateLimitDir($this->rateDir);
+        Security::setRateLimiterStorage(new \Kode\Security\Storage\MemoryStorage());
         Security::setAutoSession(false);
     }
 
     protected function tearDown(): void
     {
-        $files = glob($this->rateDir . '/*');
-        if ($files !== false) {
-            foreach ($files as $file) {
-                if (is_file($file)) {
-                    unlink($file);
-                }
-            }
-        }
-        if (is_dir($this->rateDir)) {
-            rmdir($this->rateDir);
-        }
+        \Kode\Security\Storage\MemoryStorage::flush();
     }
 
     public function testRateLimitAllowsRequests(): void
@@ -151,5 +138,29 @@ final class SecurityTest extends TestCase
 
         self::assertStringNotContainsString('<script>', $clean);
         self::assertStringContainsString('hello', $clean);
+    }
+
+    public function testRequestFingerprint(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '192.168.1.1';
+        $_SERVER['HTTP_USER_AGENT'] = 'PHPUnit/10.0';
+
+        $fp1 = Security::requestFingerprint();
+        $fp2 = Security::requestFingerprint();
+        $fp3 = Security::requestFingerprint(['extra' => 'value']);
+
+        self::assertSame(64, strlen($fp1));
+        self::assertSame($fp1, $fp2);
+        self::assertNotSame($fp1, $fp3);
+    }
+
+    public function testNonce(): void
+    {
+        $token = Security::nonce('order', 60);
+
+        self::assertTrue(Security::verifyNonce($token, 'order', 60));
+        self::assertFalse(Security::verifyNonce($token, 'order', 60));
+        self::assertFalse(Security::verifyNonce('', 'order', 60));
+        self::assertFalse(Security::verifyNonce($token, 'payment', 60));
     }
 }

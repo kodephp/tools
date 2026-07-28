@@ -6,14 +6,16 @@ namespace Kode\Security;
 
 use InvalidArgumentException;
 use Kode\Ip\Ip;
+use Kode\Security\Contracts\RateLimiterStorageInterface;
+use Kode\Security\Storage\FileStorage;
 use RuntimeException;
 
 /**
  * 安全工具类
- * 提供限速、CSRF、请求签名、CIDR检查、输入过滤等安全功能
+ * 提供限速、CSRF、请求签名、CIDR检查、输入过滤、请求指纹、重放防护等安全功能
  *
- * 所有方法均为静态方法，便于快速调用；限速模块使用文件锁实现并发安全，
- * 适合 FPM / Swoole / FrankenPHP / Workerman 等多种运行环境。
+ * 所有方法均为静态方法，便于快速调用；限速模块支持文件锁、内存、APCu、Redis 等多种存储后端，
+ * 可灵活适配 FPM / Swoole / FrankenPHP / Workerman 等高并发环境。
  */
 class Security
 {
@@ -29,39 +31,52 @@ class Security
     private const SIGN_ALGO = 'sha256';
     /** 签名有效期（秒），0表示不校验时间戳 */
     private const SIGN_EXPIRE = 300;
+    /** Nonce 默认 TTL（秒） */
+    private const DEFAULT_NONCE_TTL = 300;
 
-    /** @var string 限速数据存储目录 */
-    private static string $rateLimitDir = '';
+    /** @var RateLimiterStorageInterface|null 限速存储实例 */
+    private static ?RateLimiterStorageInterface $rateLimiterStorage = null;
 
     /** @var bool 是否自动启动会话以支持 CSRF */
     private static bool $autoSession = true;
 
     /**
-     * 配置限速存储目录
+     * 设置限速存储后端
      */
-    public static function setRateLimitDir(string $dir): void
+    public static function setRateLimiterStorage(RateLimiterStorageInterface $storage): void
     {
-        if ($dir !== '' && !is_dir($dir)) {
-            if (!mkdir($dir, 0750, true) && !is_dir($dir)) {
-                throw new RuntimeException("Failed to create rate limit directory: {$dir}");
-            }
-        }
-        self::$rateLimitDir = $dir;
+        self::$rateLimiterStorage = $storage;
     }
 
     /**
-     * 获取限速存储目录
+     * 获取当前限速存储后端
+     */
+    public static function getRateLimiterStorage(): RateLimiterStorageInterface
+    {
+        if (self::$rateLimiterStorage === null) {
+            self::$rateLimiterStorage = new FileStorage();
+        }
+        return self::$rateLimiterStorage;
+    }
+
+    /**
+     * 配置限速文件存储目录（便捷方法）
+     */
+    public static function setRateLimitDir(string $dir): void
+    {
+        self::$rateLimiterStorage = new FileStorage($dir);
+    }
+
+    /**
+     * 获取限速文件存储目录（便捷方法）
      */
     public static function getRateLimitDir(): string
     {
-        if (self::$rateLimitDir === '') {
-            $dir = sys_get_temp_dir() . '/kode_rate_limit';
-            if (!is_dir($dir)) {
-                mkdir($dir, 0750, true);
-            }
-            return $dir;
+        $storage = self::getRateLimiterStorage();
+        if ($storage instanceof FileStorage) {
+            return $storage->getDir();
         }
-        return self::$rateLimitDir;
+        return '';
     }
 
     /**
@@ -82,11 +97,11 @@ class Security
      */
     public static function rateLimit(string $key, int $maxAttempts = self::DEFAULT_RATE_LIMIT, int $windowSeconds = self::DEFAULT_RATE_WINDOW): bool
     {
-        return self::rateLimitRemaining($key, $maxAttempts, $windowSeconds) > 0;
+        return self::getRateLimiterStorage()->hit($key, $maxAttempts, $windowSeconds) > 0;
     }
 
     /**
-     * 获取剩余可用请求次数
+     * 获取剩余可用请求次数（同时会记录本次请求）
      *
      * @param string $key 限速标识
      * @param int $maxAttempts 窗口内最大次数
@@ -95,44 +110,15 @@ class Security
      */
     public static function rateLimitRemaining(string $key, int $maxAttempts = self::DEFAULT_RATE_LIMIT, int $windowSeconds = self::DEFAULT_RATE_WINDOW): int
     {
-        if ($maxAttempts <= 0 || $windowSeconds <= 0) {
-            throw new InvalidArgumentException('maxAttempts and windowSeconds must be positive');
-        }
+        return self::getRateLimiterStorage()->hit($key, $maxAttempts, $windowSeconds);
+    }
 
-        $safeKey = self::sanitizeRateKey($key);
-        $file = self::getRateLimitDir() . '/' . $safeKey . '.json';
-        $now = microtime(true);
-        $windowStart = $now - $windowSeconds;
-
-        $handle = fopen($file, 'c+');
-        if ($handle === false) {
-            throw new RuntimeException("Unable to open rate limit file: {$file}");
-        }
-
-        if (!flock($handle, LOCK_EX)) {
-            fclose($handle);
-            throw new RuntimeException('Unable to acquire rate limit lock');
-        }
-
-        $record = self::readRateFile($handle);
-        $record['requests'] = array_values(array_filter(
-            $record['requests'] ?? [],
-            static fn (float $time): bool => $time > $windowStart
-        ));
-
-        $remaining = $maxAttempts - count($record['requests']);
-
-        if ($remaining > 0) {
-            $record['requests'][] = $now;
-            self::writeRateFile($handle, $record);
-        } else {
-            self::writeRateFile($handle, $record);
-        }
-
-        flock($handle, LOCK_UN);
-        fclose($handle);
-
-        return $remaining;
+    /**
+     * 仅查询剩余次数，不增加计数
+     */
+    public static function rateLimitAvailable(string $key, int $maxAttempts = self::DEFAULT_RATE_LIMIT, int $windowSeconds = self::DEFAULT_RATE_WINDOW): int
+    {
+        return self::getRateLimiterStorage()->remaining($key, $maxAttempts, $windowSeconds);
     }
 
     /**
@@ -140,12 +126,62 @@ class Security
      */
     public static function rateLimitReset(string $key): bool
     {
-        $safeKey = self::sanitizeRateKey($key);
-        $file = self::getRateLimitDir() . '/' . $safeKey . '.json';
-        if (file_exists($file)) {
-            return unlink($file);
+        return self::getRateLimiterStorage()->reset($key);
+    }
+
+    /**
+     * 生成请求指纹（基于 IP + User-Agent + 可选额外参数）
+     *
+     * @param array $extra 额外参与哈希的字段
+     * @return string 64 位十六进制指纹
+     */
+    public static function requestFingerprint(array $extra = []): string
+    {
+        $parts = [
+            Ip::get() ?? '',
+            $_SERVER['HTTP_USER_AGENT'] ?? '',
+        ];
+
+        if ($extra !== []) {
+            $parts[] = json_encode($extra, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
-        return true;
+
+        return hash('sha256', implode('|', $parts));
+    }
+
+    /**
+     * 生成一次性 Nonce（用于防重放攻击）
+     *
+     * @param string $namespace 命名空间
+     * @param int $ttl 有效时间（秒）
+     * @return string Nonce Token
+     */
+    public static function nonce(string $namespace = 'nonce', int $ttl = self::DEFAULT_NONCE_TTL): string
+    {
+        return self::randomToken(32) . ':' . $namespace;
+    }
+
+    /**
+     * 验证并消耗一个 Nonce
+     *
+     * @param string $token 待验证的 Nonce
+     * @param string $namespace 命名空间
+     * @param int $ttl 有效时间（秒）
+     * @return bool 是否首次有效
+     */
+    public static function verifyNonce(string $token, string $namespace = 'nonce', int $ttl = self::DEFAULT_NONCE_TTL): bool
+    {
+        if ($token === '' || !str_contains($token, ':')) {
+            return false;
+        }
+
+        [$random, $ns] = explode(':', $token, 2);
+        if ($random === '' || $ns !== $namespace) {
+            return false;
+        }
+
+        $key = 'nonce:' . $namespace . ':' . hash('sha256', $token);
+        return self::getRateLimiterStorage()->hit($key, 1, $ttl) > 0;
     }
 
     /**
@@ -300,7 +336,7 @@ class Security
      *
      * @param string $key 键名
      * @param mixed $default 默认值
-     * @param string $type 目标类型：string|int|float|bool|array|email|url|ip
+     * @param string $type 目标类型：string|int|float|bool|array|email|url|ip|json
      * @param string $source 数据源：get|post|cookie|request|server
      * @return mixed 过滤后的值
      */
@@ -398,43 +434,6 @@ class Security
     public static function randomInt(int $min, int $max): int
     {
         return random_int($min, $max);
-    }
-
-    /**
-     * 读取限速文件
-     */
-    private static function readRateFile($handle): array
-    {
-        rewind($handle);
-        $content = stream_get_contents($handle);
-        if ($content === false || $content === '') {
-            return ['requests' => []];
-        }
-        $data = json_decode($content, true);
-        return is_array($data) ? $data : ['requests' => []];
-    }
-
-    /**
-     * 写入限速文件
-     */
-    private static function writeRateFile($handle, array $record): void
-    {
-        ftruncate($handle, 0);
-        rewind($handle);
-        fwrite($handle, json_encode($record, JSON_UNESCAPED_UNICODE));
-        fflush($handle);
-    }
-
-    /**
-     * 清理限速 key，防止目录遍历
-     */
-    private static function sanitizeRateKey(string $key): string
-    {
-        $safe = preg_replace('/[^a-zA-Z0-9_-]/', '_', $key);
-        if ($safe === '' || strlen($safe) > 128) {
-            throw new InvalidArgumentException('Invalid rate limit key');
-        }
-        return $safe;
     }
 
     /**

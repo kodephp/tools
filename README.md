@@ -896,6 +896,16 @@ $email = Security::input('email', '', 'email', 'post');
 // XSS 清理
 $safe = Security::xssClean('<script>alert(1)</script>');
 // 结果: 清理后的安全字符串
+
+// 请求指纹 + Nonce 防重放
+$fingerprint = Security::requestFingerprint();
+$nonce = Security::nonce('api', 300);
+$valid = Security::verifyNonce($nonce, 'api', 300);
+// 结果: true（第二次验证为 false）
+
+// 切换限速存储后端为 APCu（单机多 worker）
+use Kode\Security\Storage\ApcuStorage;
+Security::setRateLimiterStorage(new ApcuStorage());
 ```
 
 ### 方法说明
@@ -903,8 +913,13 @@ $safe = Security::xssClean('<script>alert(1)</script>');
 | 方法 | 说明 | 示例 |
 |------|------|------|
 | `Security::rateLimit(string $key, int $max, int $window)` | 检查是否触发限速 | `Security::rateLimit('ip', 60, 60)` |
-| `Security::rateLimitRemaining(string $key, int $max, int $window)` | 获取剩余次数 | `Security::rateLimitRemaining('ip', 60, 60)` |
+| `Security::rateLimitRemaining(string $key, int $max, int $window)` | 获取剩余次数（同时记录本次） | `Security::rateLimitRemaining('ip', 60, 60)` |
+| `Security::rateLimitAvailable(string $key, int $max, int $window)` | 仅查询剩余次数 | `Security::rateLimitAvailable('ip', 60, 60)` |
 | `Security::rateLimitReset(string $key)` | 重置限速记录 | `Security::rateLimitReset('ip')` |
+| `Security::setRateLimiterStorage(RateLimiterStorageInterface $storage)` | 切换限速存储后端 | `Security::setRateLimiterStorage(new RedisStorage($redis))` |
+| `Security::requestFingerprint(array $extra)` | 请求指纹 | `Security::requestFingerprint()` |
+| `Security::nonce(string $namespace, int $ttl)` | 生成一次性 Nonce | `Security::nonce('api', 300)` |
+| `Security::verifyNonce(string $token, string $namespace, int $ttl)` | 验证并消耗 Nonce | `Security::verifyNonce($token, 'api', 300)` |
 | `Security::csrfToken(?string $key)` | 生成 CSRF Token | `Security::csrfToken()` |
 | `Security::csrfVerify(string $token, ?string $key, bool $clear)` | 验证 CSRF Token | `Security::csrfVerify($token)` |
 | `Security::csrfTokenOnce(?string $key)` | 生成一次性 Token | `Security::csrfTokenOnce()` |
@@ -921,6 +936,37 @@ $safe = Security::xssClean('<script>alert(1)</script>');
 | `Security::sqlSafe(string $str)` | SQL 基础过滤 | `Security::sqlSafe("' OR 1=1")` |
 | `Security::randomToken(int $length)` | 生成随机 Token | `Security::randomToken(32)` |
 | `Security::randomInt(int $min, int $max)` | 安全随机整数 | `Security::randomInt(1, 100)` |
+
+### 限速存储后端
+
+默认使用 `FileStorage`（文件锁），适合大多数多进程环境。根据部署形态可切换为更高性能的存储：
+
+```php
+use Kode\Security\Security;
+use Kode\Security\Storage\MemoryStorage;
+use Kode\Security\Storage\ApcuStorage;
+use Kode\Security\Storage\RedisStorage;
+
+// 内存存储（仅当前进程，适合测试）
+Security::setRateLimiterStorage(new MemoryStorage());
+
+// APCu 存储（单机多 worker 共享）
+if ((new ApcuStorage())->available()) {
+    Security::setRateLimiterStorage(new ApcuStorage());
+}
+
+// Redis 存储（分布式多机共享）
+$redis = new Redis();
+$redis->connect('127.0.0.1', 6379);
+Security::setRateLimiterStorage(new RedisStorage($redis));
+```
+
+| 存储后端 | 适用场景 | 依赖 |
+|----------|----------|------|
+| `FileStorage` | 默认，多进程 FPM/Swoole | 无 |
+| `MemoryStorage` | 单进程 / 单元测试 | 无 |
+| `ApcuStorage` | 单机多 worker 高性能 | ext-apcu |
+| `RedisStorage` | 分布式部署 | ext-redis |
 
 ## 二维码模块
 
@@ -1076,6 +1122,10 @@ ip_in_range('192.168.1.100', '192.168.1.1-192.168.1.200');
 // 安全函数
 security_rate_limit('api:user_123', 5, 60);
 // 结果: true / false
+security_rate_limit_available('api:user_123', 5, 60);
+// 结果: 剩余次数
+security_rate_limit_storage(new \Kode\Security\Storage\MemoryStorage());
+// 结果: 切换限速存储后端
 security_csrf_token();
 // 结果: 32位随机Token
 security_sign(['user_id' => 1], 'your_secret_key_16chars');
@@ -1084,6 +1134,11 @@ security_input('age', 0, 'int', 'get');
 // 结果: 过滤后的整数
 security_xss_clean('<script>alert(1)</script>');
 // 结果: 清理后的字符串
+security_fingerprint();
+// 结果: 64位十六进制请求指纹
+$nonce = security_nonce('api', 300);
+security_verify_nonce($nonce, 'api', 300);
+// 结果: true（首次）/ false（重复）
 
 // HTTP请求函数
 curl_get('https://api.example.com/users', ['page' => 1]);
@@ -1109,7 +1164,7 @@ random_string(16);
 本项目已针对 FPM、Swoole、FrankenPHP、Workerman 等运行环境做以下并发安全处理：
 
 1. **`Message` 无状态化**：`Message::` 静态链式调用每次都会创建新的实例，不共享实例状态，避免长生命周期服务中的请求间状态泄漏。
-2. **限速文件锁**：`Security::rateLimit()` 使用 `flock` 文件锁实现滑动窗口计数，可直接用于多进程/多 worker 环境；生产环境建议替换为 Redis / APCu 存储接口（后续版本将提供统一接口）。
+2. **限速存储可切换**：默认 `FileStorage` 使用 `flock` 文件锁实现滑动窗口计数，可直接用于多进程/多 worker 环境；单机高并发建议切换为 `ApcuStorage`，分布式部署建议切换为 `RedisStorage`。
 3. **Crypto 实例复用**：`(new Crypto($key))` 实例可安全复用，但密钥不应在请求间共享不同业务密钥。
 4. **建议组合**：
 

@@ -1175,3 +1175,68 @@ if (!function_exists('security_random_token')) {
         return Security::randomToken($length);
     }
 }
+
+if (!function_exists('security_rate_limit_storage')) {
+    /**
+     * 设置限速存储后端
+     * @param \Kode\Security\Contracts\RateLimiterStorageInterface $storage 存储实例
+     * @return void
+     */
+    function security_rate_limit_storage(\Kode\Security\Contracts\RateLimiterStorageInterface $storage): void
+    {
+        Security::setRateLimiterStorage($storage);
+    }
+}
+
+if (!function_exists('security_rate_limit_available')) {
+    /**
+     * 仅查询限速剩余次数（不增加计数）
+     * @param string $key 限速标识
+     * @param int $maxAttempts 最大次数
+     * @param int $windowSeconds 窗口时长（秒）
+     * @return int 剩余次数
+     */
+    function security_rate_limit_available(string $key, int $maxAttempts = 60, int $windowSeconds = 60): int
+    {
+        return Security::rateLimitAvailable($key, $maxAttempts, $windowSeconds);
+    }
+}
+
+if (!function_exists('security_fingerprint')) {
+    /**
+     * 生成请求指纹
+     * @param array $extra 额外参与哈希的字段
+     * @return string 64 位十六进制指纹
+     */
+    function security_fingerprint(array $extra = []): string
+    {
+        return Security::requestFingerprint($extra);
+    }
+}
+
+if (!function_exists('security_nonce')) {
+    /**
+     * 生成一次性 Nonce
+     * @param string $namespace 命名空间
+     * @param int $ttl 有效时间（秒）
+     * @return string Nonce Token
+     */
+    function security_nonce(string $namespace = 'nonce', int $ttl = 300): string
+    {
+        return Security::nonce($namespace, $ttl);
+    }
+}
+
+if (!function_exists('security_verify_nonce')) {
+    /**
+     * 验证并消耗一次性 Nonce
+     * @param string $token 待验证的 Nonce
+     * @param string $namespace 命名空间
+     * @param int $ttl 有效时间（秒）
+     * @return bool 是否首次有效
+     */
+    function security_verify_nonce(string $token, string $namespace = 'nonce', int $ttl = 300): bool
+    {
+        return Security::verifyNonce($token, $namespace, $ttl);
+    }
+}

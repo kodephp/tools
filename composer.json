@@ -50,7 +50,7 @@
     },
     "scripts": {
         "test": "phpunit",
-        "analyse": "phpstan analyse",
+        "analyse": "phpstan analyse --memory-limit=512M",
         "fix": "php-cs-fixer fix"
     },
     "minimum-stability": "stable",
