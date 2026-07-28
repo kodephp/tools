@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kode\Time;
 
 class Time
@@ -140,7 +142,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 本周开始时间戳
      */
-    public static function weekStart(int $timestamp = null): int
+    public static function weekStart(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         $weekday = date('w', $timestamp);
@@ -153,7 +155,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 本周结束时间戳
      */
-    public static function weekEnd(int $timestamp = null): int
+    public static function weekEnd(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         $weekday = date('w', $timestamp);
@@ -166,7 +168,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 本月开始时间戳
      */
-    public static function monthStart(int $timestamp = null): int
+    public static function monthStart(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return strtotime(date('Y-m-01 00:00:00', $timestamp));
@@ -177,7 +179,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 本月结束时间戳
      */
-    public static function monthEnd(int $timestamp = null): int
+    public static function monthEnd(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return strtotime(date('Y-m-t 23:59:59', $timestamp));
@@ -188,7 +190,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 本年开始时间戳
      */
-    public static function yearStart(int $timestamp = null): int
+    public static function yearStart(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return strtotime(date('Y-01-01 00:00:00', $timestamp));
@@ -199,7 +201,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 本年结束时间戳
      */
-    public static function yearEnd(int $timestamp = null): int
+    public static function yearEnd(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return strtotime(date('Y-12-31 23:59:59', $timestamp));
@@ -210,7 +212,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 上周开始时间戳
      */
-    public static function lastWeekStart(int $timestamp = null): int
+    public static function lastWeekStart(?int $timestamp = null): int
     {
         return self::weekStart($timestamp) - 7 * 86400;
     }
@@ -220,7 +222,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 上周结束时间戳
      */
-    public static function lastWeekEnd(int $timestamp = null): int
+    public static function lastWeekEnd(?int $timestamp = null): int
     {
         return self::weekEnd($timestamp) - 7 * 86400;
     }
@@ -230,7 +232,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 上月开始时间戳
      */
-    public static function lastMonthStart(int $timestamp = null): int
+    public static function lastMonthStart(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return strtotime(date('Y-m-01 00:00:00', strtotime('-1 month', $timestamp)));
@@ -241,7 +243,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 上月结束时间戳
      */
-    public static function lastMonthEnd(int $timestamp = null): int
+    public static function lastMonthEnd(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return strtotime(date('Y-m-t 23:59:59', strtotime('-1 month', $timestamp)));
@@ -252,7 +254,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 上年开始时间戳
      */
-    public static function lastYearStart(int $timestamp = null): int
+    public static function lastYearStart(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return strtotime((date('Y', $timestamp) - 1) . '-01-01 00:00:00');
@@ -263,7 +265,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 上年结束时间戳
      */
-    public static function lastYearEnd(int $timestamp = null): int
+    public static function lastYearEnd(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return strtotime((date('Y', $timestamp) - 1) . '-12-31 23:59:59');
@@ -347,7 +349,7 @@ class Time
      * @param int $year 年份
      * @return int 天数
      */
-    public static function daysInMonth(int $month, int $year = null): int
+    public static function daysInMonth(int $month, ?int $year = null): int
     {
         $year = $year ?? (int)date('Y');
         return (int)date('t', mktime(0, 0, 0, $month, 1, $year));
@@ -424,7 +426,7 @@ class Time
      * @param int $timestamp 时间戳
      * @return int 毫秒时间戳
      */
-    public static function toMillisecond(int $timestamp = null): int
+    public static function toMillisecond(?int $timestamp = null): int
     {
         $timestamp = $timestamp ?? time();
         return $timestamp * 1000;

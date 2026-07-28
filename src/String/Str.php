@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kode\String;
 
 class Str
@@ -646,7 +648,7 @@ class Str
         }
 
         // 提取姓名
-        if (preg_match('/([\u4e00-\u9fa5]{2,8})/', $address, $matches)) {
+        if (preg_match('/([\x{4e00}-\x{9fa5}]{2,8})/u', $address, $matches)) {
             $result['name'] = $matches[0];
             $address = str_replace($matches[0], '', $address);
         }
@@ -1051,6 +1053,31 @@ class Str
             return $str;
         }
         return mb_strimwidth($str, 0, $limit, $end);
+    }
+
+    /**
+     * 字符串限制长度（limit别名）
+     * @param string $str 字符串
+     * @param int $limit 限制长度
+     * @param string $end 结尾字符
+     * @return string 限制后的字符串
+     */
+    public static function limitLength(string $str, int $limit, string $end = '...'): string
+    {
+        return self::limit($str, $limit, $end);
+    }
+
+    /**
+     * 多字节字符串截断（按字节长度截断，中文不截半）
+     * @param string $str 字符串
+     * @param int $start 开始位置
+     * @param int|null $length 截断字节长度
+     * @param string $encoding 编码
+     * @return string 截断后的字符串
+     */
+    public static function mbStrcut(string $str, int $start, ?int $length = null, string $encoding = 'UTF-8'): string
+    {
+        return mb_strcut($str, $start, $length, $encoding);
     }
 
     /**

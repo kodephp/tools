@@ -13,6 +13,7 @@
 * [数学计算模块](#数学计算模块)
 * [地理位置模块](#地理位置模块)
 * [IP地址模块](#ip地址模块)
+* [安全模块](#安全模块)
 * [二维码模块](#二维码模块)
 * [全局辅助函数](#全局辅助函数)
 * [许可证](#许可证)
@@ -21,7 +22,7 @@
 
 ## 简介
 
-这是一个基于PHP8.1+特性开发的模块化通用工具包，提供了消息体、数组处理、字符串处理、时间处理、加解密、IP地址处理、地理计算、HTTP请求、二维码生成、全局辅助方法等功能。支持对象和静态两种调用方式。
+这是一个基于PHP8.1+特性开发的模块化通用工具包，提供了消息体、数组处理、字符串处理、时间处理、加解密、IP地址处理、地理计算、HTTP请求、二维码生成、安全工具、全局辅助方法等功能。支持对象和静态两种调用方式。
 
 ## 安装
 
@@ -46,7 +47,10 @@ composer require kode/tools
 ```php
 use Kode\Message\Message;
 
+// (new Message) 与 Message:: 完全等价
+
 // 默认200，msg="成功"
+(new Message)->result();
 Message::result();
 // 结果: ['code' => 200, 'msg' => '成功']
 
@@ -65,6 +69,10 @@ Message::data(['id' => 1])->code(20001)->msg('请求数据有误')->result();
 // 动态添加任意字段
 Message::data(['id' => 1])->page(1)->name('张三')->result();
 // 结果: ['code' => 200, 'msg' => '成功', 'data' => ['id' => 1], 'page' => 1, 'name' => '张三']
+
+// 动态字段支持委托 Str/Arr/Time/Math/Geo/Ip 等静态方法（多参数自动计算）
+Message::mbStrcut('张三你吃了吗', 0, 6)->result();
+// 结果: ['code' => 200, 'msg' => '成功', 'mbStrcut' => '张三']
 ```
 
 ### 方法说明
@@ -74,11 +82,16 @@ Message::data(['id' => 1])->page(1)->name('张三')->result();
 | `Message::result()` | 返回结果数组，默认code=200, msg="成功" | `Message::result()` |
 | `Message::code(int $code)` | 设置状态码 | `Message::code(400)` |
 | `Message::msg(string $msg)` | 设置消息文本 | `Message::msg('成功')` |
-| `Message::data(mixed $data)` | 设置数据（可选） | `Message::data(['id' => 1])` |
-| `Message::page(int $page)` | 设置页码（动态字段） | `Message::page(1)` |
-| `Message::total(int $total)` | 设置总数（动态字段） | `Message::total(100)` |
+| `Message::data(mixed $data)` | 设置数据（可选，null时不输出） | `Message::data(['id' => 1])` |
+| `Message::toArray()` | `result()` 的别名 | `Message::toArray()` |
+| `Message::toJson(int $options)` | 返回 JSON 字符串 | `Message::toJson()` |
+| `Message::sanitize(bool $enabled)` | 是否开启 XSS 过滤（默认true） | `Message::sanitize(false)` |
+| `Message::page(int $page)` | 设置页码（动态字段示例） | `Message::page(1)` |
+| `Message::total(int $total)` | 设置总数（动态字段示例） | `Message::total(100)` |
 | `Message::loadCodes(string $path)` | 从文件加载状态码 | `Message::loadCodes('config/codes.php')` |
 | `Message::codes(array $codes)` | 合并自定义状态码 | `Message::codes([800000 => '自定义错误'])` |
+| `Message::getAllCodes()` | 获取全部状态码映射 | `Message::getAllCodes()` |
+| `Message::clearCodes()` | 清空自定义状态码 | `Message::clearCodes()` |
 
 ### 内置状态码
 
@@ -807,6 +820,14 @@ Ip::getType('192.168.1.1');
 Ip::getType('8.8.8.8');
 // 结果: public
 
+// CIDR 检查
+Ip::inCidr('192.168.1.100', '192.168.1.0/24');
+// 结果: true
+
+// IP 范围检查
+Ip::inRange('192.168.1.100', '192.168.1.1-192.168.1.200');
+// 结果: true
+
 // IP转长整数
 Ip::toLong('192.168.1.1');
 // 结果: 3232235777
@@ -823,12 +844,83 @@ Ip::fromLong(3232235777);
 | `Ip::isValid(string $ip)` | IP验证 | `Ip::isValid('192.168.1.1')` |
 | `Ip::isPrivate(string $ip)` | 是否私有IP | `Ip::isPrivate('192.168.1.1')` |
 | `Ip::isPublic(string $ip)` | 是否公网IP | `Ip::isPublic('8.8.8.8')` |
+| `Ip::inCidr(string $ip, string $cidr)` | 是否属于 CIDR | `Ip::inCidr('192.168.1.1', '192.168.1.0/24')` |
+| `Ip::inRange(string $ip, string $range)` | 是否在 IP 范围 | `Ip::inRange('1.1.1.1', '1.1.1.0-1.1.1.255')` |
 | `Ip::getVersion(string $ip)` | IP版本(4/6) | `Ip::getVersion('192.168.1.1')` |
 | `Ip::getType(string $ip)` | IP类型 | `Ip::getType('192.168.1.1')` |
 | `Ip::toLong(string $ip)` | IP转整数 | `Ip::toLong('192.168.1.1')` |
 | `Ip::fromLong(int $long)` | 整数转IP | `Ip::fromLong(3232235777)` |
 | `Ip::getLocation(string $ip, ?string $apiKey)` | IP归属地 | `Ip::getLocation('8.8.8.8')` |
 | `Ip::isFromCountry(string $ip, string $countryCode)` | 是否某国IP | `Ip::isFromCountry('8.8.8.8', 'US')` |
+
+## 安全模块
+
+### 特性
+
+- ✅ 滑动窗口限速（文件锁实现，并发安全）
+- ✅ CSRF Token 生成与验证
+- ✅ HMAC-SHA256 请求签名与验签
+- ✅ CIDR/IP 范围检查
+- ✅ 安全输入过滤与 XSS/SQL 基础清理
+
+### 快速开始
+
+```php
+use Kode\Security\Security;
+
+// 限速：每 60 秒最多 5 次
+$allow = Security::rateLimit('user_123', 5, 60);
+// 结果: true（前 5 次）/ false（触发限速）
+
+// CSRF Token
+$token = Security::csrfToken();
+$valid = Security::csrfVerify($token);
+// 结果: true
+
+// 一次性 CSRF Token
+$once = Security::csrfTokenOnce();
+Security::csrfVerifyOnce($once); // 验证后自动失效
+
+// 请求签名
+$secret = 'your_secret_key_at_least_16chars';
+$payload = Security::signPayload(['user_id' => 123], $secret);
+// 结果: ['user_id' => 123, '_time' => 171..., '_sign' => '...']
+
+$ok = Security::signVerify($payload, $secret);
+// 结果: true
+
+// 安全获取输入
+$age = Security::input('age', 0, 'int', 'get');
+$email = Security::input('email', '', 'email', 'post');
+
+// XSS 清理
+$safe = Security::xssClean('<script>alert(1)</script>');
+// 结果: 清理后的安全字符串
+```
+
+### 方法说明
+
+| 方法 | 说明 | 示例 |
+|------|------|------|
+| `Security::rateLimit(string $key, int $max, int $window)` | 检查是否触发限速 | `Security::rateLimit('ip', 60, 60)` |
+| `Security::rateLimitRemaining(string $key, int $max, int $window)` | 获取剩余次数 | `Security::rateLimitRemaining('ip', 60, 60)` |
+| `Security::rateLimitReset(string $key)` | 重置限速记录 | `Security::rateLimitReset('ip')` |
+| `Security::csrfToken(?string $key)` | 生成 CSRF Token | `Security::csrfToken()` |
+| `Security::csrfVerify(string $token, ?string $key, bool $clear)` | 验证 CSRF Token | `Security::csrfVerify($token)` |
+| `Security::csrfTokenOnce(?string $key)` | 生成一次性 Token | `Security::csrfTokenOnce()` |
+| `Security::csrfVerifyOnce(string $token, ?string $key)` | 验证一次性 Token | `Security::csrfVerifyOnce($token)` |
+| `Security::sign(array $data, string $secret, ?int $timestamp)` | 生成签名 | `Security::sign($data, $secret)` |
+| `Security::signVerify(array $data, string $secret, int $expire)` | 验证签名 | `Security::signVerify($data, $secret)` |
+| `Security::signPayload(array $data, string $secret)` | 生成带签名的数据 | `Security::signPayload($data, $secret)` |
+| `Security::inCidr(string $ip, string $cidr)` | CIDR 检查 | `Security::inCidr('1.1.1.1', '1.1.1.0/24')` |
+| `Security::inRange(string $ip, string $range)` | IP 范围检查 | `Security::inRange('1.1.1.1', '1.1.1.0-1.1.1.255')` |
+| `Security::input(string $key, mixed $default, string $type, string $source)` | 安全输入过滤 | `Security::input('id', 0, 'int', 'get')` |
+| `Security::inputs(array $rules)` | 批量安全输入过滤 | `Security::inputs([['id','int',0,'get']])` |
+| `Security::cast(mixed $value, string $type)` | 类型转换过滤 | `Security::cast('123', 'int')` |
+| `Security::xssClean(string $str)` | XSS 清理 | `Security::xssClean('<script>')` |
+| `Security::sqlSafe(string $str)` | SQL 基础过滤 | `Security::sqlSafe("' OR 1=1")` |
+| `Security::randomToken(int $length)` | 生成随机 Token | `Security::randomToken(32)` |
+| `Security::randomInt(int $min, int $max)` | 安全随机整数 | `Security::randomInt(1, 100)` |
 
 ## 二维码模块
 
@@ -888,6 +980,12 @@ arr_random([1, 2, 3]);
 // 结果: 随机一个元素
 arr_deep_merge(['a' => 1], ['b' => 2]);
 // 结果: ['a' => 1, 'b' => 2]
+arr_pluck($array, 'name');
+// 结果: 提取的列值数组
+arr_to_tree($list, 'id', 'parent_id', 'children');
+// 结果: 树形结构
+arr_from_tree($tree, 'children');
+// 结果: 扁平数组
 arr_multi_sort($array, ['created_at'], ['desc']);
 // 结果: 排序后的数组
 
@@ -904,6 +1002,10 @@ str_from_base64('aGVsbG8=');
 // 结果: hello
 str_truncate('abcdefghijk', 5);
 // 结果: abcde...
+str_limit_length('你好世界', 3);
+// 结果: 你好...
+str_mb_strcut('张三你吃了吗', 0, 6);
+// 结果: 张三
 str_camel('hello_world');
 // 结果: helloWorld
 str_snake('helloWorld');
@@ -966,6 +1068,22 @@ ip_is_private('192.168.1.1');
 // 结果: true
 ip_is_public('8.8.8.8');
 // 结果: true
+ip_in_cidr('192.168.1.1', '192.168.1.0/24');
+// 结果: true
+ip_in_range('192.168.1.100', '192.168.1.1-192.168.1.200');
+// 结果: true
+
+// 安全函数
+security_rate_limit('api:user_123', 5, 60);
+// 结果: true / false
+security_csrf_token();
+// 结果: 32位随机Token
+security_sign(['user_id' => 1], 'your_secret_key_16chars');
+// 结果: HMAC签名
+security_input('age', 0, 'int', 'get');
+// 结果: 过滤后的整数
+security_xss_clean('<script>alert(1)</script>');
+// 结果: 清理后的字符串
 
 // HTTP请求函数
 curl_get('https://api.example.com/users', ['page' => 1]);
@@ -984,6 +1102,28 @@ uuid();
 // 结果: 06c32c05-c0e8-4e9e-b80f-3919404f923c
 random_string(16);
 // 结果: xK7d9f2mAb3cL5nP
+```
+
+## 高并发使用建议
+
+本项目已针对 FPM、Swoole、FrankenPHP、Workerman 等运行环境做以下并发安全处理：
+
+1. **`Message` 无状态化**：`Message::` 静态链式调用每次都会创建新的实例，不共享实例状态，避免长生命周期服务中的请求间状态泄漏。
+2. **限速文件锁**：`Security::rateLimit()` 使用 `flock` 文件锁实现滑动窗口计数，可直接用于多进程/多 worker 环境；生产环境建议替换为 Redis / APCu 存储接口（后续版本将提供统一接口）。
+3. **Crypto 实例复用**：`(new Crypto($key))` 实例可安全复用，但密钥不应在请求间共享不同业务密钥。
+4. **建议组合**：
+
+```php
+use Kode\Message\Message;
+use Kode\Security\Security;
+
+// 在控制器入口统一限速
+if (!Security::rateLimit('api:' . Ip::get(), 100, 60)) {
+    return Message::code(429)->msg('请求过于频繁')->result();
+}
+
+// 业务响应
+return Message::data(['id' => 1])->page(1)->total(100)->result();
 ```
 
 ## 许可证

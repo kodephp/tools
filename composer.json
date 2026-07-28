@@ -1,1 +1,58 @@
-{"name": "kode/tools", "description": "PHP8.1+通用工具包，包含消息体、数组处理、字符串处理、时间处理、加解密、IP、地理计算、Curl、二维码、全局辅助函数等", "type": "library", "license": "MIT", "keywords": ["php", "php8", "array", "string", "time", "message", "crypto", "tree", "ip", "geo", "helper", "curl", "qrcode", "tools", "pipe", "pipeline"], "homepage": "https://github.com/kode/tools", "authors": [{"name": "Kode Team", "email": "382601296@qq.com"}], "support": {"issues": "https://github.com/kode/tools/issues", "docs": "https://github.com/kode/tools/blob/master/README.md"}, "funding": [{"type": "github", "url": "https://github.com/sponsors/kode"}], "require": {"php": ">=8.1", "ext-openssl": "*", "ext-json": "*", "ext-mbstring": "*", "ext-gd": "*", "endroid/qr-code": "^6.0"}, "require-dev": {"phpstan/phpstan": "^1.10", "friendsofphp/php-cs-fixer": "^3.20"}, "autoload": {"psr-4": {"Kode\\": "src/"}, "files": ["src/Helper/helper.php"]}, "autoload-dev": {"psr-4": {"Kode\\Tests\\": "tests/"}}, "scripts": {"test": "phpunit", "analyse": "phpstan analyse", "fix": "php-cs-fixer fix"}, "minimum-stability": "stable", "prefer-stable": true}
+{
+    "name": "kode/tools",
+    "description": "PHP8.1+通用工具包，包含消息体、数组处理、字符串处理、时间处理、加解密、IP、地理计算、Curl、二维码、全局辅助函数等",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["php", "php8", "array", "string", "time", "message", "crypto", "tree", "ip", "geo", "helper", "curl", "qrcode", "tools", "pipe", "pipeline"],
+    "homepage": "https://github.com/kode/tools",
+    "authors": [
+        {
+            "name": "Kode Team",
+            "email": "382601296@qq.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/kode/tools/issues",
+        "docs": "https://github.com/kode/tools/blob/master/README.md"
+    },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/kode"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "ext-openssl": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-bcmath": "*",
+        "ext-gd": "*",
+        "endroid/qr-code": "^6.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10",
+        "friendsofphp/php-cs-fixer": "^3.20",
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Kode\\": "src/"
+        },
+        "files": [
+            "src/Helper/helper.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Kode\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse",
+        "fix": "php-cs-fixer fix"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

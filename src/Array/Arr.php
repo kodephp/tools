@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kode\Array;
 
 class Arr
@@ -1024,5 +1026,41 @@ class Arr
             }
         }
         return true;
+    }
+
+    /**
+     * 数组列提取（column别名）
+     * @param array $array 数组
+     * @param string $columnKey 列键名
+     * @param string|null $indexKey 索引键名
+     * @return array 提取后的数组
+     */
+    public static function pluck(array $array, string $columnKey, ?string $indexKey = null): array
+    {
+        return self::column($array, $columnKey, $indexKey);
+    }
+
+    /**
+     * 数组转树形结构（tree别名）
+     * @param array $list 数组
+     * @param string $idField ID字段名
+     * @param string $parentIdField 父ID字段名
+     * @param string $childrenField 子节点字段名
+     * @return array 树形结构
+     */
+    public static function toTree(array $list, string $idField = 'id', string $parentIdField = 'parent_id', string $childrenField = 'children'): array
+    {
+        return self::tree($list, $idField, $parentIdField, $childrenField);
+    }
+
+    /**
+     * 树形结构转数组（list别名）
+     * @param array $tree 树形结构
+     * @param string $childrenField 子节点字段名
+     * @return array 数组
+     */
+    public static function fromTree(array $tree, string $childrenField = 'children'): array
+    {
+        return self::list($tree, $childrenField);
     }
 }

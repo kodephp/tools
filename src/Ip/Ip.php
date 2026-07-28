@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kode\Ip;
 
 /**
@@ -226,15 +228,153 @@ class Ip
         if (!self::isValid($ip)) {
             return null;
         }
-        
-        if (self::isPrivate($ip)) {
-            return 'private';
-        }
-        
+
         if ($ip === '127.0.0.1' || $ip === '::1') {
             return 'loopback';
         }
-        
+
+        if (self::isPrivate($ip)) {
+            return 'private';
+        }
+
         return 'public';
+    }
+
+    /**
+     * 检查IP是否属于指定CIDR网段
+     * @param string $ip IP地址
+     * @param string $cidr CIDR网段（如 192.168.0.0/16）
+     * @return bool 是否属于该网段
+     */
+    public static function inCidr(string $ip, string $cidr): bool
+    {
+        if (!self::isValid($ip)) {
+            return false;
+        }
+
+        if (self::getVersion($ip) === 6) {
+            return self::inCidrV6($ip, $cidr);
+        }
+
+        return self::inCidrV4($ip, $cidr);
+    }
+
+    /**
+     * 检查IPv4是否属于指定CIDR网段
+     */
+    private static function inCidrV4(string $ip, string $cidr): bool
+    {
+        if (!str_contains($cidr, '/')) {
+            $cidr .= '/32';
+        }
+
+        [$subnet, $mask] = explode('/', $cidr, 2);
+        $mask = (int)$mask;
+
+        if ($mask < 0 || $mask > 32) {
+            return false;
+        }
+
+        $ipLong = ip2long($ip);
+        $subnetLong = ip2long($subnet);
+
+        if ($ipLong === false || $subnetLong === false) {
+            return false;
+        }
+
+        $maskLong = $mask === 0 ? 0 : -1 << (32 - $mask);
+        return ($ipLong & $maskLong) === ($subnetLong & $maskLong);
+    }
+
+    /**
+     * 检查IPv6是否属于指定CIDR网段
+     */
+    private static function inCidrV6(string $ip, string $cidr): bool
+    {
+        if (!str_contains($cidr, '/')) {
+            $cidr .= '/128';
+        }
+
+        [$subnet, $mask] = explode('/', $cidr, 2);
+        $mask = (int)$mask;
+
+        if ($mask < 0 || $mask > 128) {
+            return false;
+        }
+
+        $ipBin = inet_pton($ip);
+        $subnetBin = inet_pton($subnet);
+
+        if ($ipBin === false || $subnetBin === false) {
+            return false;
+        }
+
+        $maskBytes = intdiv($mask, 8);
+        $maskBits = $mask % 8;
+
+        for ($i = 0; $i < $maskBytes; $i++) {
+            if ($ipBin[$i] !== $subnetBin[$i]) {
+                return false;
+            }
+        }
+
+        if ($maskBits > 0) {
+            $shift = 8 - $maskBits;
+            return (ord($ipBin[$maskBytes]) >> $shift) === (ord($subnetBin[$maskBytes]) >> $shift);
+        }
+
+        return true;
+    }
+
+    /**
+     * 检查IP是否在指定IP范围内（支持 CIDR 或 start-end 范围）
+     * @param string $ip IP地址
+     * @param string $range IP范围（如 192.168.0.0/24 或 192.168.0.1-192.168.0.255）
+     * @return bool 是否在范围内
+     */
+    public static function inRange(string $ip, string $range): bool
+    {
+        if (str_contains($range, '/')) {
+            return self::inCidr($ip, $range);
+        }
+
+        if (str_contains($range, '-')) {
+            [$start, $end] = explode('-', $range, 2);
+            return self::betweenIp($ip, trim($start), trim($end));
+        }
+
+        return self::isValid($ip) && self::isValid($range) && $ip === $range;
+    }
+
+    /**
+     * 检查IP是否在start-end范围内
+     */
+    private static function betweenIp(string $ip, string $start, string $end): bool
+    {
+        if (!self::isValid($ip) || !self::isValid($start) || !self::isValid($end)) {
+            return false;
+        }
+
+        if (self::getVersion($ip) === 6) {
+            $ipBin = inet_pton($ip);
+            $startBin = inet_pton($start);
+            $endBin = inet_pton($end);
+
+            if ($ipBin === false || $startBin === false || $endBin === false) {
+                return false;
+            }
+
+            return $startBin <= $ipBin && $ipBin <= $endBin;
+        }
+
+        $ipLong = ip2long($ip);
+        $startLong = ip2long($start);
+        $endLong = ip2long($end);
+
+        if ($ipLong === false || $startLong === false || $endLong === false) {
+            return false;
+        }
+
+        return $ipLong >= $startLong && $ipLong <= $endLong;
     }
 }

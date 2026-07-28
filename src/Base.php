@@ -58,7 +58,7 @@ class Base
      * @param mixed $default 默认值
      * @return mixed 配置值
      */
-    public static function getConfig(string $key = null, mixed $default = null): mixed
+    public static function getConfig(?string $key = null, mixed $default = null): mixed
     {
         if ($key === null) {
             return static::$config;

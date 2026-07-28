@@ -41,10 +41,6 @@ class Crypto extends Base
     /** 数据最大长度（字节） */
     private const MAX_DATA_LENGTH = 10_000_000;
 
-    /** PHP版本检测标志 */
-    private static bool $php85Detected = false;
-    /** PHP8.5+标志 */
-    private static bool $isPhp85 = false;
     /** 单例实例 */
     private static ?self $instance = null;
 
@@ -85,19 +81,6 @@ class Crypto extends Base
                 'mode' => self::MODE_STANDARD,
             ];
         }
-    }
-
-    /**
-     * 检测PHP版本是否为8.5+
-     * @return bool 是否为PHP8.5+
-     */
-    private static function detectPhp85(): bool
-    {
-        if (!self::$php85Detected) {
-            self::$php85Detected = true;
-            self::$isPhp85 = PHP_VERSION_ID >= 80500;
-        }
-        return self::$isPhp85;
     }
 
     /**
@@ -529,10 +512,10 @@ class Crypto extends Base
      */
     public static function token(int $length = 32): string
     {
-        if (self::detectPhp85()) {
-            return bin2hex(random_bytes($length / 2));
+        if ($length < 8 || $length > 256) {
+            throw new InvalidArgumentException('Token length must be between 8 and 256');
         }
-        return bin2hex(random_bytes(max(16, $length / 2)));
+        return bin2hex(random_bytes(intdiv($length, 2)));
     }
 
     /**
@@ -602,6 +585,54 @@ class Crypto extends Base
     }
 
     /**
+     * MD5哈希别名（带crypto前缀，避免与原生md5冲突）
+     */
+    public static function cryptoMd5(string $str, string $salt = ''): string
+    {
+        return self::md5($str, $salt);
+    }
+
+    /**
+     * SHA1哈希别名
+     */
+    public static function cryptoSha1(string $str, string $salt = ''): string
+    {
+        return self::sha1($str, $salt);
+    }
+
+    /**
+     * SHA256哈希别名
+     */
+    public static function cryptoSha256(string $str, string $salt = ''): string
+    {
+        return self::sha256($str, $salt);
+    }
+
+    /**
+     * HMAC哈希别名
+     */
+    public static function cryptoHmac(string $data, string $key, string $algo = 'sha256'): string
+    {
+        return self::hmac($data, $key, $algo);
+    }
+
+    /**
+     * 密码哈希别名
+     */
+    public static function cryptoPasswordHash(string $str, ?int $algo = null): string
+    {
+        return self::passwordHash($str, $algo);
+    }
+
+    /**
+     * 密码验证别名
+     */
+    public static function cryptoPasswordVerify(string $str, string $hash): bool
+    {
+        return self::passwordVerify($str, $hash);
+    }
+
+    /**
      * 静态方法调用
      * @param string $name 方法名
      * @param array $arguments 参数
@@ -612,7 +643,9 @@ class Crypto extends Base
         $staticMethods = [
             'md5', 'sha1', 'sha256', 'passwordHash', 'passwordVerify',
             'passwordNeedsRehash', 'hmac', 'hash', 'hashEquals',
-            'randomString', 'token', 'uuid', 'orderId', 'inviteCode', 'verifyCode'
+            'randomString', 'token', 'uuid', 'orderId', 'inviteCode', 'verifyCode',
+            'cryptoMd5', 'cryptoSha1', 'cryptoSha256', 'cryptoHmac',
+            'cryptoPasswordHash', 'cryptoPasswordVerify',
         ];
 
         if (in_array($name, $staticMethods, true)) {

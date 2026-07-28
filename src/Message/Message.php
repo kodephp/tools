@@ -5,21 +5,37 @@ declare(strict_types=1);
 namespace Kode\Message;
 
 use InvalidArgumentException;
+use Kode\Array\Arr;
+use Kode\Geo\Geo;
+use Kode\Ip\Ip;
+use Kode\Math\Math;
+use Kode\String\Str;
+use Kode\Time\Time;
 use Throwable;
 
 /**
  * 消息响应体 - 链式调用
  *
- * 支持灵活的链式调用方式：
- * - Message::result() - 默认200+成功
- * - Message::code(20001)->msg('错误')->result()
- * - Message::data([...])->code(20001)->result()
- * - Message::data([...])->code(20001)->msg('错误')->page(1)->name('张三')->result()
+ * 支持灵活的链式调用方式，实例调用与静态调用完全等价：
+ * - (new Message())->result()          默认 200 + "成功"
+ * - Message::result()                  同上
+ * - Message::code(20001)->msg('...')->result()
+ * - Message::data([...])->code(20001)->page(1)->name('张三')->result()
+ * - Message::mb_strcut('张三你吃了吗', 0, 2)->result()
  *
- * @method static Message page(int $value) 添加页码字段
- * @method static Message size(int $value) 添加每页数量字段
- * @method static Message name(string $value) 添加名称字段
- * @method static Message total(int|float $value) 添加总数字段
+ * 静态链式调用每次都会创建新的实例，不存在请求间状态泄漏，适合 Swoole / FrankenPHP / Workerman 等高并发长生命周期环境。
+ *
+ * @method static static code(int $code)
+ * @method static static msg(string $msg)
+ * @method static static data(mixed $data)
+ * @method static static sanitize(bool $enabled = true)
+ * @method static array result()
+ * @method static string toJson(int $options = 320)
+ * @method static array toArray()
+ * @method static static page(int $value)
+ * @method static static size(int $value)
+ * @method static static name(string $value)
+ * @method static static total(int|float $value)
  */
 class Message
 {
@@ -71,7 +87,6 @@ class Message
     ];
 
     private static array $customCodes = [];
-    private static ?self $instance = null;
 
     private const FORBIDDEN_METHODS = [
         'exec', 'system', 'shell_exec', 'passthru', 'popen', 'proc_open',
@@ -80,7 +95,7 @@ class Message
         'file', 'file_get_contents', 'file_put_contents',
         'fopen', 'fwrite', 'fclose', 'readfile',
         'include', 'include_once', 'require', 'require_once',
-        'mkdir', 'rmdir', 'unlink', 'rmdir',
+        'mkdir', 'rmdir', 'unlink',
         'curl_exec', 'curl_multi_exec',
         'mysql', 'mysqli', 'pg_', 'sqlite',
         'header', 'session_', 'cookie',
@@ -89,76 +104,77 @@ class Message
         '__invoke', '__toString', '__clone',
     ];
 
-    public function __construct(
-        public readonly bool $sanitizeEnabled = true,
-    ) {
+    private const DELEGATED_CLASSES = [
+        Str::class,
+        Arr::class,
+        Time::class,
+        Math::class,
+        Geo::class,
+        Ip::class,
+    ];
+
+    public function __construct(bool $sanitizeEnabled = true)
+    {
         $this->sanitize = $sanitizeEnabled;
     }
 
-    public static function code(int $code): static
+    /**
+     * 静态方法入口
+     */
+    public static function __callStatic(string $name, array $arguments): mixed
     {
-        return self::getInstance()->setCode($code);
+        if (in_array($name, ['codes', 'loadCodes', 'getMsgByCode', 'getDefaultCodes', 'getAllCodes', 'clearCodes', 'setCodes'], true)) {
+            return self::$name(...$arguments);
+        }
+
+        return (new self())->__call($name, $arguments);
     }
 
-    public static function msg(string $msg): static
+    /**
+     * 动态字段与方法委托
+     */
+    public function __call(string $name, array $arguments): mixed
     {
-        return self::getInstance()->setMsg($msg);
+        $this->validateMethodName($name);
+
+        return match ($name) {
+            'code' => $this->setCode($arguments[0] ?? 200),
+            'msg' => $this->setMsg($arguments[0] ?? ''),
+            'data' => $this->setData($arguments[0] ?? null),
+            'sanitize' => $this->setSanitize($arguments[0] ?? true),
+            'result', 'toArray' => $this->buildResult(),
+            'toJson' => $this->buildJson($arguments[0] ?? (JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+            default => $this->handleDynamicField($name, $arguments),
+        };
     }
 
-    public static function data(mixed $data): static
+    public function __toString(): string
     {
-        return self::getInstance()->setData($data);
+        return $this->buildJson();
     }
 
-    public function setCode(int $code): static
+    private function setCode(int $code): static
     {
         $this->code = $code;
         return $this;
     }
 
-    public function setMsg(string $msg): static
+    private function setMsg(string $msg): static
     {
         $this->msg = $this->sanitize ? $this->sanitizeString($msg) : $msg;
         return $this;
     }
 
-    public function setData(mixed $data): static
+    private function setData(mixed $data): static
     {
         $this->data = $this->sanitize ? $this->sanitizeData($data) : $data;
         return $this;
     }
 
-    public function __call(string $name, array $arguments): static
+    private function setSanitize(bool $enabled): static
     {
-        $this->validateMethodName($name);
-
-        if (isset($arguments[0]) && $arguments[0] !== null) {
-            $this->fields[$name] = $this->sanitize
-                ? $this->sanitizeValue($arguments[0])
-                : $arguments[0];
-        }
+        $this->sanitize = $enabled;
         return $this;
-    }
-
-    public static function __callStatic(string $name, array $arguments): static
-    {
-        return self::getInstance()->__call($name, $arguments);
-    }
-
-    private static function getInstance(): static
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
-    public static function result(): array
-    {
-        $instance = self::getInstance();
-        $result = $instance->buildResult();
-        self::$instance = null;
-        return $result;
     }
 
     private function buildResult(): array
@@ -167,8 +183,10 @@ class Message
 
         if ($this->msg !== null) {
             $result['msg'] = $this->msg;
-        } else {
+        } elseif ($this->code === 200) {
             $result['msg'] = self::DEFAULT_MSG;
+        } else {
+            $result['msg'] = self::getMsgByCode($this->code) ?? self::DEFAULT_MSG;
         }
 
         if ($this->data !== null) {
@@ -182,26 +200,41 @@ class Message
         return $result;
     }
 
-    public function toArray(): array
-    {
-        return $this->buildResult();
-    }
-
-    public function toJson(int $options = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES): string
+    private function buildJson(int $options = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES): string
     {
         return json_encode($this->buildResult(), $options);
     }
 
-    public function __toString(): string
+    private function handleDynamicField(string $name, array $arguments): static
     {
-        return $this->toJson();
+        if (count($arguments) === 1) {
+            $value = $arguments[0];
+            $this->fields[$name] = $this->sanitize ? $this->sanitizeValue($value) : $value;
+            return $this;
+        }
+
+        foreach (self::DELEGATED_CLASSES as $class) {
+            if (method_exists($class, $name)) {
+                $value = $class::$name(...$arguments);
+                $this->fields[$name] = $this->sanitize ? $this->sanitizeValue($value) : $value;
+                return $this;
+            }
+        }
+
+        throw new InvalidArgumentException("Unsupported field method: {$name}");
     }
 
+    /**
+     * 合并自定义状态码
+     */
     public static function codes(array $codes): void
     {
-        self::$customCodes = [...self::$customCodes, ...$codes];
+        self::$customCodes = array_replace(self::$customCodes, $codes);
     }
 
+    /**
+     * 从文件加载状态码映射
+     */
     public static function loadCodes(string $filePath): bool
     {
         if (!file_exists($filePath)) {
@@ -269,26 +302,41 @@ class Message
         return false;
     }
 
+    /**
+     * 根据状态码获取默认消息
+     */
     public static function getMsgByCode(int $code): ?string
     {
         return self::$customCodes[$code] ?? self::CODES[$code] ?? null;
     }
 
+    /**
+     * 获取内置状态码映射
+     */
     public static function getDefaultCodes(): array
     {
         return self::CODES;
     }
 
+    /**
+     * 获取所有状态码映射（含自定义）
+     */
     public static function getAllCodes(): array
     {
-        return [...self::CODES, ...self::$customCodes];
+        return self::$customCodes + self::CODES;
     }
 
+    /**
+     * 清空自定义状态码
+     */
     public static function clearCodes(): void
     {
         self::$customCodes = [];
     }
 
+    /**
+     * 覆盖自定义状态码
+     */
     public static function setCodes(array $codes): void
     {
         self::$customCodes = $codes;

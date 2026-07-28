@@ -119,7 +119,7 @@ class Qr
         return $this;
     }
 
-    public function label(string $text, int $fontSize = 16, string $font = null): self
+    public function label(string $text, int $fontSize = 16, ?string $font = null): self
     {
         $fontPath = $font ?? dirname(__DIR__, 3) . '/assets/fonts/arial.ttf';
         $this->label = new Label(

@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 use Kode\Array\Arr;
 use Kode\String\Str;
 use Kode\Time\Time;
 use Kode\Crypto\Crypto;
 use Kode\Geo\Geo;
 use Kode\Ip\Ip;
+use Kode\Security\Security;
 use Kode\Curl\Curl;
 use Kode\Curl\Response;
 use Kode\Qrcode\Qr;
@@ -137,7 +140,7 @@ if (!function_exists('crypto_encrypt')) {
      */
     function crypto_encrypt(string $str, string $key): string
     {
-        return Crypto::encrypt($str, $key);
+        return (new Crypto($key))->encrypt($str);
     }
 }
 
@@ -150,7 +153,7 @@ if (!function_exists('crypto_decrypt')) {
      */
     function crypto_decrypt(string $str, string $key): string
     {
-        return Crypto::decrypt($str, $key);
+        return (new Crypto($key))->decrypt($str);
     }
 }
 
@@ -260,6 +263,32 @@ if (!function_exists('ip_is_private')) {
     }
 }
 
+if (!function_exists('ip_in_cidr')) {
+    /**
+     * 检查IP是否属于指定CIDR网段
+     * @param string $ip IP地址
+     * @param string $cidr CIDR网段
+     * @return bool 是否属于该网段
+     */
+    function ip_in_cidr(string $ip, string $cidr): bool
+    {
+        return Ip::inCidr($ip, $cidr);
+    }
+}
+
+if (!function_exists('ip_in_range')) {
+    /**
+     * 检查IP是否在指定IP范围内
+     * @param string $ip IP地址
+     * @param string $range IP范围
+     * @return bool 是否在范围内
+     */
+    function ip_in_range(string $ip, string $range): bool
+    {
+        return Ip::inRange($ip, $range);
+    }
+}
+
 if (!function_exists('arr_first')) {
     /**
      * 获取数组第一个元素
@@ -336,6 +365,48 @@ if (!function_exists('arr_all')) {
     }
 }
 
+if (!function_exists('arr_pluck')) {
+    /**
+     * 数组列提取
+     * @param array $array 数组
+     * @param string $columnKey 列键名
+     * @param string|null $indexKey 索引键名
+     * @return array 提取后的数组
+     */
+    function arr_pluck(array $array, string $columnKey, ?string $indexKey = null): array
+    {
+        return Arr::pluck($array, $columnKey, $indexKey);
+    }
+}
+
+if (!function_exists('arr_to_tree')) {
+    /**
+     * 数组转树形结构
+     * @param array $list 数组
+     * @param string $idField ID字段名
+     * @param string $parentIdField 父ID字段名
+     * @param string $childrenField 子节点字段名
+     * @return array 树形结构
+     */
+    function arr_to_tree(array $list, string $idField = 'id', string $parentIdField = 'parent_id', string $childrenField = 'children'): array
+    {
+        return Arr::toTree($list, $idField, $parentIdField, $childrenField);
+    }
+}
+
+if (!function_exists('arr_from_tree')) {
+    /**
+     * 树形结构转数组
+     * @param array $tree 树形结构
+     * @param string $childrenField 子节点字段名
+     * @return array 数组
+     */
+    function arr_from_tree(array $tree, string $childrenField = 'children'): array
+    {
+        return Arr::fromTree($tree, $childrenField);
+    }
+}
+
 if (!function_exists('str_truncate')) {
     /**
      * 字符串截断
@@ -361,6 +432,35 @@ if (!function_exists('str_limit')) {
     function str_limit(string $str, int $limit, string $suffix = '...'): string
     {
         return Str::limit($str, $limit, $suffix);
+    }
+}
+
+if (!function_exists('str_limit_length')) {
+    /**
+     * 字符串限制长度
+     * @param string $str 字符串
+     * @param int $limit 限制长度
+     * @param string $suffix 后缀
+     * @return string 限制后的字符串
+     */
+    function str_limit_length(string $str, int $limit, string $suffix = '...'): string
+    {
+        return Str::limitLength($str, $limit, $suffix);
+    }
+}
+
+if (!function_exists('str_mb_strcut')) {
+    /**
+     * 多字节字符串截断（按字节长度）
+     * @param string $str 字符串
+     * @param int $start 开始位置
+     * @param int|null $length 截断字节长度
+     * @param string $encoding 编码
+     * @return string 截断后的字符串
+     */
+    function str_mb_strcut(string $str, int $start, ?int $length = null, string $encoding = 'UTF-8'): string
+    {
+        return Str::mbStrcut($str, $start, $length, $encoding);
     }
 }
 
@@ -952,5 +1052,126 @@ if (!function_exists('qr_hex_to_rgb')) {
             (int) hexdec(substr($hex, 2, 2)),
             (int) hexdec(substr($hex, 4, 2)),
         ];
+    }
+}
+
+if (!function_exists('security_rate_limit')) {
+    /**
+     * 检查是否超过限速
+     * @param string $key 限速标识
+     * @param int $maxAttempts 最大次数
+     * @param int $windowSeconds 窗口时长（秒）
+     * @return bool true = 允许通过
+     */
+    function security_rate_limit(string $key, int $maxAttempts = 60, int $windowSeconds = 60): bool
+    {
+        return Security::rateLimit($key, $maxAttempts, $windowSeconds);
+    }
+}
+
+if (!function_exists('security_rate_limit_remaining')) {
+    /**
+     * 获取剩余可用请求次数
+     * @param string $key 限速标识
+     * @param int $maxAttempts 最大次数
+     * @param int $windowSeconds 窗口时长（秒）
+     * @return int 剩余次数
+     */
+    function security_rate_limit_remaining(string $key, int $maxAttempts = 60, int $windowSeconds = 60): int
+    {
+        return Security::rateLimitRemaining($key, $maxAttempts, $windowSeconds);
+    }
+}
+
+if (!function_exists('security_csrf_token')) {
+    /**
+     * 生成 CSRF Token
+     * @param string|null $sessionKey 会话键名
+     * @return string Token
+     */
+    function security_csrf_token(?string $sessionKey = null): string
+    {
+        return Security::csrfToken($sessionKey);
+    }
+}
+
+if (!function_exists('security_csrf_verify')) {
+    /**
+     * 验证 CSRF Token
+     * @param string $token 待验证 Token
+     * @param string|null $sessionKey 会话键名
+     * @param bool $clear 是否一次性
+     * @return bool 是否有效
+     */
+    function security_csrf_verify(string $token, ?string $sessionKey = null, bool $clear = false): bool
+    {
+        return Security::csrfVerify($token, $sessionKey, $clear);
+    }
+}
+
+if (!function_exists('security_sign')) {
+    /**
+     * 生成请求签名
+     * @param array $data 待签名数据
+     * @param string $secret 密钥
+     * @param int|null $timestamp 时间戳
+     * @return string 签名
+     */
+    function security_sign(array $data, string $secret, ?int $timestamp = null): string
+    {
+        return Security::sign($data, $secret, $timestamp);
+    }
+}
+
+if (!function_exists('security_sign_verify')) {
+    /**
+     * 验证请求签名
+     * @param array $data 接收数据
+     * @param string $secret 密钥
+     * @param int $expire 有效期（秒）
+     * @return bool 是否有效
+     */
+    function security_sign_verify(array $data, string $secret, int $expire = 300): bool
+    {
+        return Security::signVerify($data, $secret, $expire);
+    }
+}
+
+if (!function_exists('security_input')) {
+    /**
+     * 安全获取输入值
+     * @param string $key 键名
+     * @param mixed $default 默认值
+     * @param string $type 目标类型
+     * @param string $source 数据源
+     * @return mixed 过滤后的值
+     */
+    function security_input(string $key, mixed $default = null, string $type = 'string', string $source = 'request'): mixed
+    {
+        return Security::input($key, $default, $type, $source);
+    }
+}
+
+if (!function_exists('security_xss_clean')) {
+    /**
+     * XSS 清理
+     * @param string $str 字符串
+     * @return string 清理后的字符串
+     */
+    function security_xss_clean(string $str): string
+    {
+        return Security::xssClean($str);
+    }
+}
+
+if (!function_exists('security_random_token')) {
+    /**
+     * 生成随机 Token
+     * @param int $length 长度
+     * @return string Token
+     */
+    function security_random_token(int $length = 32): string
+    {
+        return Security::randomToken($length);
     }
 }
