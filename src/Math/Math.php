@@ -11,15 +11,35 @@ namespace Kode\Math;
  */
 class Math
 {
+    /** @var int 全局默认保留小数位数 */
+    private static int $defaultScale = 10;
+
+    /**
+     * 设置全局默认保留小数位数
+     */
+    public static function setDefaultScale(int $scale): void
+    {
+        self::$defaultScale = max(0, $scale);
+    }
+
+    /**
+     * 获取全局默认保留小数位数
+     */
+    public static function getDefaultScale(): int
+    {
+        return self::$defaultScale;
+    }
+
     /**
      * 加法运算
      * @param float|int|string $num1 第一个数
      * @param float|int|string $num2 第二个数
-     * @param int $scale 保留小数位数
+     * @param int|null $scale 保留小数位数，null 使用全局默认
      * @return string 结果
      */
-    public static function add(float|int|string $num1, float|int|string $num2, int $scale = 10): string
+    public static function add(float|int|string $num1, float|int|string $num2, ?int $scale = null): string
     {
+        $scale ??= self::$defaultScale;
         return bcadd((string)$num1, (string)$num2, $scale);
     }
 
@@ -30,8 +50,9 @@ class Math
      * @param int $scale 保留小数位数
      * @return string 结果
      */
-    public static function sub(float|int|string $num1, float|int|string $num2, int $scale = 10): string
+    public static function sub(float|int|string $num1, float|int|string $num2, ?int $scale = null): string
     {
+        $scale ??= self::$defaultScale;
         return bcsub((string)$num1, (string)$num2, $scale);
     }
 
@@ -42,8 +63,9 @@ class Math
      * @param int $scale 保留小数位数
      * @return string 结果
      */
-    public static function mul(float|int|string $num1, float|int|string $num2, int $scale = 10): string
+    public static function mul(float|int|string $num1, float|int|string $num2, ?int $scale = null): string
     {
+        $scale ??= self::$defaultScale;
         return bcmul((string)$num1, (string)$num2, $scale);
     }
 
@@ -54,8 +76,9 @@ class Math
      * @param int $scale 保留小数位数
      * @return string 结果
      */
-    public static function div(float|int|string $num1, float|int|string $num2, int $scale = 10): string
+    public static function div(float|int|string $num1, float|int|string $num2, ?int $scale = null): string
     {
+        $scale ??= self::$defaultScale;
         if ($num2 == 0) {
             throw new \InvalidArgumentException('除数不能为0');
         }
@@ -83,8 +106,9 @@ class Math
      * @param int $scale 保留小数位数
      * @return string 结果
      */
-    public static function pow(float|int|string $num, int $exponent, int $scale = 10): string
+    public static function pow(float|int|string $num, int $exponent, ?int $scale = null): string
     {
+        $scale ??= self::$defaultScale;
         return bcpow((string)$num, (string)$exponent, $scale);
     }
 
@@ -94,8 +118,9 @@ class Math
      * @param int $scale 保留小数位数
      * @return string 结果
      */
-    public static function sqrt(float|int|string $num, int $scale = 10): string
+    public static function sqrt(float|int|string $num, ?int $scale = null): string
     {
+        $scale ??= self::$defaultScale;
         if ($num < 0) {
             throw new \InvalidArgumentException('被开方数不能为负数');
         }
@@ -171,7 +196,7 @@ class Math
      * @param int $scale 比较精度
      * @return bool 是否相等
      */
-    public static function equal(float|int|string $num1, float|int|string $num2, int $scale = 10): bool
+    public static function equal(float|int|string $num1, float|int|string $num2, ?int $scale = null): bool
     {
         return bccomp((string)$num1, (string)$num2, $scale) == 0;
     }
@@ -196,7 +221,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function sin(float|int|string $num, int $scale = 10): float
+    public static function sin(float|int|string $num, ?int $scale = null): float
     {
         return round(sin((float)$num), $scale);
     }
@@ -207,7 +232,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function cos(float|int|string $num, int $scale = 10): float
+    public static function cos(float|int|string $num, ?int $scale = null): float
     {
         return round(cos((float)$num), $scale);
     }
@@ -218,7 +243,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function tan(float|int|string $num, int $scale = 10): float
+    public static function tan(float|int|string $num, ?int $scale = null): float
     {
         return round(tan((float)$num), $scale);
     }
@@ -229,7 +254,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function asin(float|int|string $num, int $scale = 10): float
+    public static function asin(float|int|string $num, ?int $scale = null): float
     {
         if ($num < -1 || $num > 1) {
             throw new \InvalidArgumentException('数值必须在[-1, 1]范围内');
@@ -243,7 +268,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function acos(float|int|string $num, int $scale = 10): float
+    public static function acos(float|int|string $num, ?int $scale = null): float
     {
         if ($num < -1 || $num > 1) {
             throw new \InvalidArgumentException('数值必须在[-1, 1]范围内');
@@ -257,7 +282,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function atan(float|int|string $num, int $scale = 10): float
+    public static function atan(float|int|string $num, ?int $scale = null): float
     {
         return round(atan((float)$num), $scale);
     }
@@ -268,7 +293,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function ln(float|int|string $num, int $scale = 10): float
+    public static function ln(float|int|string $num, ?int $scale = null): float
     {
         if ($num <= 0) {
             throw new \InvalidArgumentException('数值必须大于0');
@@ -282,7 +307,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function log10(float|int|string $num, int $scale = 10): float
+    public static function log10(float|int|string $num, ?int $scale = null): float
     {
         if ($num <= 0) {
             throw new \InvalidArgumentException('数值必须大于0');
@@ -297,7 +322,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function log(float|int|string $num, float|int|string $base, int $scale = 10): float
+    public static function log(float|int|string $num, float|int|string $base, ?int $scale = null): float
     {
         if ($num <= 0 || $base <= 0 || $base == 1) {
             throw new \InvalidArgumentException('数值必须大于0，底数必须大于0且不等于1');
@@ -311,7 +336,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function rad2deg(float|int|string $num, int $scale = 10): float
+    public static function rad2deg(float|int|string $num, ?int $scale = null): float
     {
         return round(rad2deg((float)$num), $scale);
     }
@@ -322,7 +347,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 结果
      */
-    public static function deg2rad(float|int|string $num, int $scale = 10): float
+    public static function deg2rad(float|int|string $num, ?int $scale = null): float
     {
         return round(deg2rad((float)$num), $scale);
     }
@@ -387,9 +412,9 @@ class Math
      * @param float|int|string $part 部分数值
      * @param float|int|string $total 总数值
      * @param int $scale 保留小数位数
-     * @return float 百分比值
+     * @return string 百分比值
      */
-    public static function percentage(float|int|string $part, float|int|string $total, int $scale = 2): float
+    public static function percentage(float|int|string $part, float|int|string $total, int $scale = 2): string
     {
         if ($total == 0) {
             throw new \InvalidArgumentException('总数值不能为0');
@@ -402,9 +427,9 @@ class Math
      * @param float|int|string $price 原价
      * @param float|int|string $discount 折扣（如0.8表示8折）
      * @param int $scale 保留小数位数
-     * @return float 折后价格
+     * @return string 折后价格
      */
-    public static function discount(float|int|string $price, float|int|string $discount, int $scale = 2): float
+    public static function discount(float|int|string $price, float|int|string $discount, int $scale = 2): string
     {
         return self::mul($price, $discount, $scale);
     }
@@ -414,9 +439,9 @@ class Math
      * @param float|int|string $amount 金额
      * @param float|int|string $rate 税率（如0.1表示10%）
      * @param int $scale 保留小数位数
-     * @return float 税费
+     * @return string 税费
      */
-    public static function tax(float|int|string $amount, float|int|string $rate, int $scale = 2): float
+    public static function tax(float|int|string $amount, float|int|string $rate, int $scale = 2): string
     {
         return self::mul($amount, $rate, $scale);
     }
@@ -426,9 +451,9 @@ class Math
      * @param float|int|string $amount 不含税金额
      * @param float|int|string $rate 税率（如0.1表示10%）
      * @param int $scale 保留小数位数
-     * @return float 含税金额
+     * @return string 含税金额
      */
-    public static function taxIncluded(float|int|string $amount, float|int|string $rate, int $scale = 2): float
+    public static function taxIncluded(float|int|string $amount, float|int|string $rate, int $scale = 2): string
     {
         return self::add($amount, self::tax($amount, $rate, $scale), $scale);
     }
@@ -438,9 +463,9 @@ class Math
      * @param float|int|string $amount 含税金额
      * @param float|int|string $rate 税率（如0.1表示10%）
      * @param int $scale 保留小数位数
-     * @return float 不含税金额
+     * @return string 不含税金额
      */
-    public static function taxExcluded(float|int|string $amount, float|int|string $rate, int $scale = 2): float
+    public static function taxExcluded(float|int|string $amount, float|int|string $rate, int $scale = 2): string
     {
         return self::div($amount, self::add(1, $rate, $scale + 2), $scale);
     }
@@ -451,9 +476,9 @@ class Math
      * @param float|int|string $rate 年利率（如0.05表示5%）
      * @param int $years 年数
      * @param int $scale 保留小数位数
-     * @return float 利息
+     * @return string 利息
      */
-    public static function simpleInterest(float|int|string $principal, float|int|string $rate, int $years, int $scale = 2): float
+    public static function simpleInterest(float|int|string $principal, float|int|string $rate, int $years, int $scale = 2): string
     {
         return self::mul(self::mul($principal, $rate, $scale + 2), $years, $scale);
     }
@@ -464,9 +489,9 @@ class Math
      * @param float|int|string $rate 年利率（如0.05表示5%）
      * @param int $years 年数
      * @param int $scale 保留小数位数
-     * @return float 本息合计
+     * @return string 本息合计
      */
-    public static function compoundInterest(float|int|string $principal, float|int|string $rate, int $years, int $scale = 2): float
+    public static function compoundInterest(float|int|string $principal, float|int|string $rate, int $years, int $scale = 2): string
     {
         $factor = self::add(1, $rate, $scale + 2);
         $result = self::pow($factor, $years, $scale + 2);
@@ -484,7 +509,7 @@ class Math
     {
         $random = mt_rand() / mt_getrandmax();
         $range = self::sub($max, $min, $scale + 2);
-        return self::add($min, self::mul($range, $random, $scale + 2), $scale);
+        return (float)self::add($min, self::mul($range, $random, $scale + 2), $scale);
     }
 
     /**
@@ -507,7 +532,7 @@ class Math
      * @param int $scale 保留小数位数
      * @return float 限制后的数值
      */
-    public static function clamp(float|int|string $num, float|int|string $min, float|int|string $max, int $scale = 10): float
+    public static function clamp(float|int|string $num, float|int|string $min, float|int|string $max, ?int $scale = null): float
     {
         if (self::compare($num, $min) < 0) {
             return (float)$min;
@@ -544,7 +569,7 @@ class Math
      * @param int $scale 比较精度
      * @return bool 是否为零
      */
-    public static function isZero(float|int|string $num, int $scale = 10): bool
+    public static function isZero(float|int|string $num, ?int $scale = null): bool
     {
         return self::equal($num, 0, $scale);
     }
@@ -609,9 +634,9 @@ class Math
      * @param float|int|string $end 结束值
      * @param float|int|string $t 插值因子（0-1）
      * @param int $scale 保留小数位数
-     * @return float 插值结果
+     * @return string 插值结果
      */
-    public static function lerp(float|int|string $start, float|int|string $end, float|int|string $t, int $scale = 10): float
+    public static function lerp(float|int|string $start, float|int|string $end, float|int|string $t, ?int $scale = null): string
     {
         $t = self::clamp($t, 0, 1, $scale);
         $diff = self::sub($end, $start, $scale + 2);
@@ -622,12 +647,12 @@ class Math
      * 平均值计算
      * @param array $numbers 数值数组
      * @param int $scale 保留小数位数
-     * @return float 平均值
+     * @return string 平均值
      */
-    public static function average(array $numbers, int $scale = 10): float
+    public static function average(array $numbers, ?int $scale = null): string
     {
         if (empty($numbers)) {
-            return 0;
+            return '0';
         }
         $sum = 0;
         foreach ($numbers as $num) {
@@ -640,21 +665,20 @@ class Math
      * 中位数计算
      * @param array $numbers 数值数组
      * @param int $scale 保留小数位数
-     * @return float 中位数
+     * @return string 中位数
      */
-    public static function median(array $numbers, int $scale = 10): float
+    public static function median(array $numbers, ?int $scale = null): string
     {
         if (empty($numbers)) {
-            return 0;
+            return '0';
         }
         sort($numbers);
         $count = count($numbers);
         $middle = floor($count / 2);
         if ($count % 2 == 0) {
             return self::div(self::add($numbers[$middle - 1], $numbers[$middle], $scale + 2), 2, $scale);
-        } else {
-            return (float)$numbers[$middle];
         }
+        return self::add($numbers[$middle], '0', $scale);
     }
 
     /**
@@ -676,12 +700,12 @@ class Math
      * 标准差计算
      * @param array $numbers 数值数组
      * @param int $scale 保留小数位数
-     * @return float 标准差
+     * @return string 标准差
      */
-    public static function standardDeviation(array $numbers, int $scale = 10): float
+    public static function standardDeviation(array $numbers, ?int $scale = null): string
     {
         if (count($numbers) < 2) {
-            return 0;
+            return '0';
         }
         $mean = self::average($numbers, $scale + 2);
         $sumSquares = 0;
@@ -698,12 +722,12 @@ class Math
      * 方差计算
      * @param array $numbers 数值数组
      * @param int $scale 保留小数位数
-     * @return float 方差
+     * @return string 方差
      */
-    public static function variance(array $numbers, int $scale = 10): float
+    public static function variance(array $numbers, ?int $scale = null): string
     {
         if (count($numbers) < 2) {
-            return 0;
+            return '0';
         }
         $stdDev = self::standardDeviation($numbers, $scale + 2);
         return self::mul($stdDev, $stdDev, $scale);

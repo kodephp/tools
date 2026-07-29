@@ -8,6 +8,7 @@ use Kode\Time\Time;
 use Kode\Crypto\Crypto;
 use Kode\Geo\Geo;
 use Kode\Ip\Ip;
+use Kode\Math\Math;
 use Kode\Security\Security;
 use Kode\Curl\Curl;
 use Kode\Curl\Response;
@@ -66,18 +67,62 @@ if (!function_exists('str_random')) {
      */
     function str_random(int $length = 16, string $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'): string
     {
-        return Str::random($length, $chars);
+        $length = max(1, $length);
+        $charLength = strlen($chars);
+        $result = '';
+        for ($i = 0; $i < $length; $i++) {
+            $result .= $chars[random_int(0, $charLength - 1)];
+        }
+        return $result;
     }
 }
 
 if (!function_exists('str_uuid')) {
     /**
      * 生成UUID
+     * @param string|null $format 自定义格式
      * @return string UUID
      */
-    function str_uuid(): string
+    function str_uuid(?string $format = null): string
     {
-        return Str::uuid();
+        return Str::uuid($format);
+    }
+}
+
+if (!function_exists('str_uuid_batch')) {
+    /**
+     * 批量生成唯一字符串
+     * @param int $count 生成数量
+     * @param string|null $format 自定义格式
+     * @return list<string|int> 唯一字符串数组
+     */
+    function str_uuid_batch(int $count, ?string $format = null): array
+    {
+        return Str::uuidBatch($count, $format);
+    }
+}
+
+if (!function_exists('str_ordered_uuid')) {
+    /**
+     * 生成按时间排序的唯一 ID
+     * @param string|null $format 自定义格式
+     * @return string 唯一 ID
+     */
+    function str_ordered_uuid(?string $format = null): string
+    {
+        return Str::orderedUuid($format);
+    }
+}
+
+if (!function_exists('str_code')) {
+    /**
+     * 按自定义格式生成随机码
+     * @param string $format 格式字符串
+     * @return string 随机码
+     */
+    function str_code(string $format): string
+    {
+        return Str::code($format);
     }
 }
 
@@ -182,6 +227,35 @@ if (!function_exists('str_mask_id_card')) {
     function str_mask_id_card(string $idCard, int $start = 6, int $end = 4): string
     {
         return Str::maskIdCard($idCard, $start, $end);
+    }
+}
+
+if (!function_exists('str_mask_keep')) {
+    /**
+     * Unicode 感知脱敏（保留头部/尾部指定字符数）
+     * @param string $str 原字符串
+     * @param int $head 保留前几位
+     * @param int $tail 保留后几位
+     * @param string $mask 掩码字符
+     * @return string 脱敏后的字符串
+     */
+    function str_mask_keep(string $str, int $head = 0, int $tail = 0, string $mask = '*'): string
+    {
+        return Str::maskKeep($str, $head, $tail, $mask);
+    }
+}
+
+if (!function_exists('str_validate_plate')) {
+    /**
+     * 验证车牌号
+     * @param string $plate 车牌号
+     * @param string $type 验证类型
+     * @param array $whitelist 白名单
+     * @return bool 是否有效
+     */
+    function str_validate_plate(string $plate, string $type = Str::PLATE_ALL, array $whitelist = []): bool
+    {
+        return Str::validatePlate($plate, $type, $whitelist);
     }
 }
 
@@ -1052,6 +1126,139 @@ if (!function_exists('qr_hex_to_rgb')) {
             (int) hexdec(substr($hex, 2, 2)),
             (int) hexdec(substr($hex, 4, 2)),
         ];
+    }
+}
+
+if (!function_exists('math_set_default_scale')) {
+    /**
+     * 设置 Math 全局默认保留小数位数
+     * @param int $scale 小数位数
+     * @return void
+     */
+    function math_set_default_scale(int $scale): void
+    {
+        Math::setDefaultScale($scale);
+    }
+}
+
+if (!function_exists('math_get_default_scale')) {
+    /**
+     * 获取 Math 全局默认保留小数位数
+     * @return int 小数位数
+     */
+    function math_get_default_scale(): int
+    {
+        return Math::getDefaultScale();
+    }
+}
+
+if (!function_exists('math_add')) {
+    /**
+     * 高精度加法
+     * @param float|int|string $num1 第一个数
+     * @param float|int|string $num2 第二个数
+     * @param int|null $scale 保留小数位数
+     * @return string 结果
+     */
+    function math_add(float|int|string $num1, float|int|string $num2, ?int $scale = null): string
+    {
+        return Math::add($num1, $num2, $scale);
+    }
+}
+
+if (!function_exists('math_sub')) {
+    /**
+     * 高精度减法
+     * @param float|int|string $num1 被减数
+     * @param float|int|string $num2 减数
+     * @param int|null $scale 保留小数位数
+     * @return string 结果
+     */
+    function math_sub(float|int|string $num1, float|int|string $num2, ?int $scale = null): string
+    {
+        return Math::sub($num1, $num2, $scale);
+    }
+}
+
+if (!function_exists('math_mul')) {
+    /**
+     * 高精度乘法
+     * @param float|int|string $num1 第一个数
+     * @param float|int|string $num2 第二个数
+     * @param int|null $scale 保留小数位数
+     * @return string 结果
+     */
+    function math_mul(float|int|string $num1, float|int|string $num2, ?int $scale = null): string
+    {
+        return Math::mul($num1, $num2, $scale);
+    }
+}
+
+if (!function_exists('math_div')) {
+    /**
+     * 高精度除法
+     * @param float|int|string $num1 被除数
+     * @param float|int|string $num2 除数
+     * @param int|null $scale 保留小数位数
+     * @return string 结果
+     */
+    function math_div(float|int|string $num1, float|int|string $num2, ?int $scale = null): string
+    {
+        return Math::div($num1, $num2, $scale);
+    }
+}
+
+if (!function_exists('math_discount')) {
+    /**
+     * 计算折扣价
+     * @param float|int|string $price 原价
+     * @param float|int|string $discount 折扣
+     * @param int $scale 保留小数位数
+     * @return string 折后价格
+     */
+    function math_discount(float|int|string $price, float|int|string $discount, int $scale = 2): string
+    {
+        return Math::discount($price, $discount, $scale);
+    }
+}
+
+if (!function_exists('math_tax')) {
+    /**
+     * 计算税额
+     * @param float|int|string $amount 金额
+     * @param float|int|string $rate 税率
+     * @param int $scale 保留小数位数
+     * @return string 税费
+     */
+    function math_tax(float|int|string $amount, float|int|string $rate, int $scale = 2): string
+    {
+        return Math::tax($amount, $rate, $scale);
+    }
+}
+
+if (!function_exists('math_average')) {
+    /**
+     * 计算平均值
+     * @param array $numbers 数值数组
+     * @param int|null $scale 保留小数位数
+     * @return string 平均值
+     */
+    function math_average(array $numbers, ?int $scale = null): string
+    {
+        return Math::average($numbers, $scale);
+    }
+}
+
+if (!function_exists('math_median')) {
+    /**
+     * 计算中位数
+     * @param array $numbers 数值数组
+     * @param int|null $scale 保留小数位数
+     * @return string 中位数
+     */
+    function math_median(array $numbers, ?int $scale = null): string
+    {
+        return Math::median($numbers, $scale);
     }
 }
 

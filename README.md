@@ -447,11 +447,24 @@ Arr::deepMerge(['a' => 1], ['a' => 2, 'b' => 3]);
 ```php
 use Kode\String\Str;
 
-// 脱敏
+// 脱敏（支持自定义保留范围）
 Str::maskPhone('13800138000');
 // 结果: 138****8000
+Str::maskPhone('13800138000', 2, 2);
+// 结果: 13*******00（保留前2后2）
+
 Str::maskEmail('user@example.com');
 // 结果: us**@example.com
+Str::maskEmail('user@example.com', 2, 0);
+// 结果: us**@example.com（自定义保留位数）
+
+// Unicode 感知脱敏（支持中文）
+Str::maskKeep('张三你吃了吗', 1, 1);
+// 结果: 张****吗（保留首尾各1个字符）
+
+// 自定义范围脱敏（支持负数索引）
+Str::mask('13800138000', 2, -1);
+// 结果: 13*********（从第2位替换到末尾）
 
 // 命名转换
 Str::camel('hello_world');
@@ -467,9 +480,21 @@ Str::toBase64('hello');
 Str::fromBase64('aGVsbG8=');
 // 结果: hello
 
-// UUID
+// UUID / 唯一码（支持自定义格式、批量、时间排序）
 Str::uuid();
 // 结果: a24e88d8-b560-4196-a34b-63626c1e489d
+
+Str::uuid('XXXX-9999-AA');
+// 结果: 3A7F-4821-KL（按格式生成）
+
+Str::code('999999');
+// 结果: 385104（6位数字验证码）
+
+Str::orderedUuid();
+// 结果: 018f3b5c4d3e12f4（基于微时间戳，适合批量）
+
+Str::uuidBatch(5, '9999');
+// 结果: ['1234', '5678', ...]（5个不重复的4位码）
 
 // 验证
 Str::validatePhone('13800138000');
@@ -478,6 +503,26 @@ Str::validateEmail('test@example.com');
 // 结果: true
 Str::validateIdCard('110101199001011234');
 // 结果: true
+
+// 车牌验证（支持油车/新能源/军用/使馆/白名单等）
+use Kode\String\Str;
+
+Str::validatePlate('京A12345');
+// 结果: true（普通燃油车）
+
+Str::validatePlate('沪AD12345', Str::PLATE_NEW_ENERGY);
+// 结果: true（新能源）
+
+Str::validatePlate('使12345', Str::PLATE_EMBASSY);
+// 结果: true（使馆车）
+
+// 白名单优先命中（可用于数据库中的特种车辆）
+Str::validatePlate('UNKNOWN', Str::PLATE_ALL, ['UNKNOWN', '京V00001']);
+// 结果: true
+
+// 识别车牌类型
+Str::plateType('沪AF12345');
+// 结果: new_energy
 ```
 
 ### 方法说明
@@ -485,11 +530,12 @@ Str::validateIdCard('110101199001011234');
 | 方法 | 说明 | 示例 |
 |------|------|------|
 | **脱敏方法** |||
-| `Str::maskPhone(string $phone)` | 手机号脱敏 | `Str::maskPhone('13800138000')` |
-| `Str::maskEmail(string $email)` | 邮箱脱敏 | `Str::maskEmail('a@b.com')` |
-| `Str::maskIdCard(string $idCard)` | 身份证脱敏 | `Str::maskIdCard('110101199001011234')` |
-| `Str::maskBankCard(string $bankCard)` | 银行卡脱敏 | `Str::maskBankCard('6222021234567890')` |
-| `Str::mask(string $str, int $start, int $length)` | 自定义脱敏 | `Str::mask('abc', 1, 1)` |
+| `Str::maskPhone(string $phone, int $keepStart, int $keepEnd, string $mask)` | 手机号脱敏 | `Str::maskPhone('13800138000', 2, 2)` |
+| `Str::maskEmail(string $email, int $keepStart, int $keepEnd, string $mask)` | 邮箱脱敏 | `Str::maskEmail('a@b.com', 2, 0)` |
+| `Str::maskIdCard(string $idCard, int $keepStart, int $keepEnd, string $mask)` | 身份证脱敏 | `Str::maskIdCard('110101199001011234')` |
+| `Str::maskBankCard(string $bankCard, int $keepStart, int $keepEnd)` | 银行卡脱敏 | `Str::maskBankCard('6222021234567890')` |
+| `Str::mask(string $str, int $start, int $length, string $mask)` | 自定义脱敏（支持负数） | `Str::mask('abc', 1, -1)` |
+| `Str::maskKeep(string $str, int $head, int $tail, string $mask)` | Unicode 感知保留脱敏 | `Str::maskKeep('张三', 1, 1)` |
 | **命名转换** |||
 | `Str::camel(string $str)` | 转驼峰 | `Str::camel('hello_world')` |
 | `Str::snake(string $str)` | 转蛇形 | `Str::snake('helloWorld')` |
@@ -529,14 +575,20 @@ Str::validateIdCard('110101199001011234');
 | `Str::validatePhone(string $phone, string $region)` | 验证手机号 | `Str::validatePhone('13800138000')` |
 | `Str::validateEmail(string $email)` | 验证邮箱 | `Str::validateEmail('a@b.com')` |
 | `Str::validateIdCard(string $idCard)` | 验证身份证 | `Str::validateIdCard('110101199001011234')` |
-| `Str::validateCarPlate(string $plate)` | 验证车牌 | `Str::validateCarPlate('京A12345')` |
+| `Str::validateCarPlate(string $plate)` | 验证车牌（兼容旧方法） | `Str::validateCarPlate('京A12345')` |
+| `Str::validatePlate(string $plate, string $type, array $whitelist)` | 多类型车牌验证 | `Str::validatePlate('京A12345', Str::PLATE_OIL)` |
+| `Str::plateType(string $plate)` | 识别车牌类型 | `Str::plateType('沪AF12345')` |
+| `Str::isPlateInWhitelist(string $plate, array $whitelist)` | 白名单匹配 | `Str::isPlateInWhitelist('X', ['X'])` |
 | **安全方法** |||
 | `Str::sqlSafe(string $str, bool $strict)` | SQL安全 | `Str::sqlSafe('abc')` |
 | `Str::xssSafe(string $str, bool $strict)` | XSS安全 | `Str::xssSafe('<script>')` |
 | `Str::htmlEscape(string $str)` | HTML转义 | `Str::htmlEscape('<')` |
 | `Str::htmlUnescape(string $str)` | HTML反转义 | `Str::htmlUnescape('&lt;')` |
 | **其他方法** |||
-| `Str::uuid()` | 生成UUID | `Str::uuid()` |
+| `Str::uuid(?string $format)` | 生成UUID（支持自定义格式） | `Str::uuid()` |
+| `Str::code(string $format)` | 按格式生成随机码 | `Str::code('XXXX-9999')` |
+| `Str::orderedUuid(?string $format)` | 时间排序唯一ID | `Str::orderedUuid()` |
+| `Str::uuidBatch(int $count, ?string $format)` | 批量生成唯一码 | `Str::uuidBatch(100, '9999')` |
 | `Str::random(int $length, string $mode)` | 随机字符串 | `Str::random(16)` |
 | `Str::clean(string $str, array $options)` | 清理字符串 | `Str::clean(' abc ')` |
 | `Str::similarity(string $str1, string $str2)` | 相似度 | `Str::similarity('abc', 'abd')` |
@@ -641,6 +693,7 @@ Time::sub(time(), 3600);
 ### 特性
 
 - ✅ 高精度计算（bcmath）
+- ✅ 全局默认精度 + 单次精度控制
 - ✅ 折扣/税费计算
 - ✅ 平均数/中位数/标准差
 
@@ -649,7 +702,7 @@ Time::sub(time(), 3600);
 ```php
 use Kode\Math\Math;
 
-// 高精度计算
+// 高精度计算（默认保留 10 位小数）
 Math::add('1.1', '2.2');
 // 结果: 3.3000000000
 Math::sub('5.5', '3.3');
@@ -659,19 +712,32 @@ Math::mul('1.5', '2.5');
 Math::div('10', '3');
 // 结果: 3.3333333333
 
+// 单次指定精度
+Math::add('1.1', '2.2', 2);
+// 结果: 3.30
+Math::div('10', '3', 4);
+// 结果: 3.3333
+
+// 全局默认精度
+Math::setDefaultScale(4);
+Math::getDefaultScale();
+// 结果: 4
+Math::add('1.1', '2.2');
+// 结果: 3.3000
+
 // 折扣计算
 Math::discount('100', '0.8');
-// 结果: 80
+// 结果: 80.00
 
 // 税费计算
 Math::tax('100', '0.13');
-// 结果: 13
+// 结果: 13.00
 
 // 统计
 Math::average([1, 2, 3, 4, 5]);
-// 结果: 3
+// 结果: 3.0000000000
 Math::median([1, 2, 3, 4, 5]);
-// 结果: 3
+// 结果: 3.0000000000
 Math::mode([1, 2, 2, 3]);
 // 结果: 2
 Math::standardDeviation([1, 2, 3, 4, 5]);
@@ -682,11 +748,14 @@ Math::standardDeviation([1, 2, 3, 4, 5]);
 
 | 方法 | 说明 | 示例 |
 |------|------|------|
+| **精度控制** |||
+| `Math::setDefaultScale(int $scale)` | 设置全局默认精度 | `Math::setDefaultScale(4)` |
+| `Math::getDefaultScale()` | 获取全局默认精度 | `Math::getDefaultScale()` |
 | **基础运算** |||
-| `Math::add(float\|int\|string $num1, float\|int\|string $num2, int $scale)` | 加法 | `Math::add('1.1', '2.2')` |
-| `Math::sub(float\|int\|string $num1, float\|int\|string $num2, int $scale)` | 减法 | `Math::sub('5.5', '3.3')` |
-| `Math::mul(float\|int\|string $num1, float\|int\|string $num2, int $scale)` | 乘法 | `Math::mul('1.5', '2.5')` |
-| `Math::div(float\|int\|string $num1, float\|int\|string $num2, int $scale)` | 除法 | `Math::div('10', '3')` |
+| `Math::add(float\|int\|string $num1, float\|int\|string $num2, ?int $scale)` | 加法 | `Math::add('1.1', '2.2')` |
+| `Math::sub(float\|int\|string $num1, float\|int\|string $num2, ?int $scale)` | 减法 | `Math::sub('5.5', '3.3')` |
+| `Math::mul(float\|int\|string $num1, float\|int\|string $num2, ?int $scale)` | 乘法 | `Math::mul('1.5', '2.5')` |
+| `Math::div(float\|int\|string $num1, float\|int\|string $num2, ?int $scale)` | 除法 | `Math::div('10', '3')` |
 | `Math::mod(float\|int\|string $num1, float\|int\|string $num2)` | 取模 | `Math::mod('10', '3')` |
 | `Math::pow(float\|int\|string $num, int $exponent, int $scale)` | 幂运算 | `Math::pow('2', 10)` |
 | `Math::sqrt(float\|int\|string $num, int $scale)` | 平方根 | `Math::sqrt('2')` |
@@ -1038,10 +1107,14 @@ arr_multi_sort($array, ['created_at'], ['desc']);
 // 字符串函数
 str_mask_phone('13800138000');
 // 结果: 138****8000
+str_mask_phone('13800138000', 2, 2);
+// 结果: 13*******00
 str_mask_email('user@example.com');
-// 结果: us***@example.com
+// 结果: us**@example.com
 str_mask_id_card('110101199001011234');
 // 结果: 110101********1234
+str_mask_keep('张三你吃了吗', 1, 1);
+// 结果: 张****吗
 str_to_base64('hello');
 // 结果: aGVsbG8=
 str_from_base64('aGVsbG8=');
@@ -1064,6 +1137,14 @@ str_contains('hello world', 'world');
 // 结果: true
 str_uuid();
 // 结果: 50f53907-b0e9-4c5c-9b67-8ec6aa888c5e
+str_uuid_batch(5, '9999');
+// 结果: ['1234', '5678', ...]
+str_ordered_uuid();
+// 结果: 018f3b5c4d3e12f4
+str_code('XXXX-9999');
+// 结果: 3A7F-4821
+str_validate_plate('京A12345');
+// 结果: true
 
 // 时间函数
 time_now();
@@ -1078,22 +1159,28 @@ time_diff_for_humans('2024-01-01');
 // 结果: 2年前
 
 // 数学函数
+math_set_default_scale(4);
+math_get_default_scale();
+// 结果: 4
+
 math_add('1.1', '2.2');
-// 结果: 3.3000000000
+// 结果: 3.3000
+math_add('1.1', '2.2', 2);
+// 结果: 3.30
 math_sub('5.5', '3.3');
-// 结果: 2.2000000000
+// 结果: 2.2000
 math_mul('1.5', '2.5');
-// 结果: 3.7500000000
+// 结果: 3.7500
 math_div('10', '3');
-// 结果: 3.3333333333
+// 结果: 3.3333
 math_discount('100', '0.8');
-// 结果: 80
+// 结果: 80.00
 math_tax('100', '0.13');
-// 结果: 13
+// 结果: 13.00
 math_average([1, 2, 3, 4, 5]);
-// 结果: 3
+// 结果: 3.0000
 math_median([1, 2, 3, 4, 5]);
-// 结果: 3
+// 结果: 3.0000
 
 // 地理位置函数
 geo_distance(39.9042, 116.4074, 31.2304, 121.4737);

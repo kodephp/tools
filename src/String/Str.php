@@ -7,18 +7,110 @@ namespace Kode\String;
 class Str
 {
     /**
-     * 生成UUID
-     * @return string UUID
+     * 生成 UUID
+     *
+     * @param string|null $format 自定义格式，默认生成标准 UUID v4。
+     *                            占位符：X=大写十六进制 x=小写十六进制 9=数字 A=大写字母 a=小写字母
+     * @return string UUID 字符串
      */
-    public static function uuid(): string
+    public static function uuid(?string $format = null): string
     {
-        return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            random_int(0, 0xffff), random_int(0, 0xffff),
-            random_int(0, 0xffff),
-            random_int(0, 0x0fff) | 0x4000,
-            random_int(0, 0x3fff) | 0x8000,
-            random_int(0, 0xffff), random_int(0, 0xffff), random_int(0, 0xffff)
-        );
+        if ($format === null) {
+            return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+                random_int(0, 0xffff), random_int(0, 0xffff),
+                random_int(0, 0xffff),
+                random_int(0, 0x0fff) | 0x4000,
+                random_int(0, 0x3fff) | 0x8000,
+                random_int(0, 0xffff), random_int(0, 0xffff), random_int(0, 0xffff)
+            );
+        }
+
+        return self::code($format);
+    }
+
+    /**
+     * 批量生成唯一字符串
+     *
+     * @param int $count 生成数量
+     * @param string|null $format 格式，null 表示标准 UUID
+     * @return list<string> 唯一字符串数组
+     */
+    public static function uuidBatch(int $count, ?string $format = null): array
+    {
+        if ($count <= 0) {
+            throw new \InvalidArgumentException('count must be greater than 0');
+        }
+
+        $results = [];
+        $attempts = 0;
+        $maxAttempts = $count * 100;
+
+        while (count($results) < $count && $attempts < $maxAttempts) {
+            $code = self::uuid($format);
+            $results[$code] = true;
+            $attempts++;
+        }
+
+        if (count($results) < $count) {
+            throw new \RuntimeException('Unable to generate enough unique codes, consider using a longer format');
+        }
+
+        return array_keys($results);
+    }
+
+    /**
+     * 生成按时间排序的唯一 ID（基于微时间戳 + 随机数，非标准 UUID，但更适合批量快速生成）
+     *
+     * @param string|null $format 自定义格式，默认 16 位十六进制
+     * @return string 唯一 ID
+     */
+    public static function orderedUuid(?string $format = null): string
+    {
+        if ($format === null) {
+            $time = microtime(true);
+            return sprintf('%014x%04x', (int)($time * 10000), random_int(0, 0xffff));
+        }
+
+        return self::code($format);
+    }
+
+    /**
+     * 按自定义格式生成随机码（激活码、邀请码、验证码等）
+     *
+     * 占位符说明：
+     * - X：大写十六进制字符（0-9, A-F）
+     * - x：小写十六进制字符（0-9, a-f）
+     * - 9：数字（0-9）
+     * - A：大写字母（A-Z）
+     * - a：小写字母（a-z）
+     * - 其它字符原样输出
+     *
+     * @param string $format 格式字符串，例如 'XXXX-XXXX'、'999999'、'AANN-9999'
+     * @return string 随机码
+     */
+    public static function code(string $format): string
+    {
+        $pools = [
+            'X' => '0123456789ABCDEF',
+            'x' => '0123456789abcdef',
+            '9' => '0123456789',
+            'A' => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            'a' => 'abcdefghijklmnopqrstuvwxyz',
+        ];
+
+        $result = '';
+        $length = strlen($format);
+        for ($i = 0; $i < $length; $i++) {
+            $char = $format[$i];
+            if (isset($pools[$char])) {
+                $pool = $pools[$char];
+                $result .= $pool[random_int(0, strlen($pool) - 1)];
+            } else {
+                $result .= $char;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -244,22 +336,36 @@ class Str
     }
 
     /**
-     * 字符串脱敏
+     * 字符串脱敏（字节级，兼容原有逻辑）
      * @param string $str 字符串
-     * @param int $start 开始位置
-     * @param int $length 脱敏长度
+     * @param int $start 开始位置（支持负数，从末尾计数）
+     * @param int $length 脱敏长度（支持负数，-1 表示到末尾，-2 表示留最后 1 位）
      * @param string $mask 脱敏字符
      * @return string 脱敏后的字符串
      */
     public static function mask(string $str, int $start = 0, int $length = -1, string $mask = '*'): string
     {
         $str_length = strlen($str);
+        if ($str_length === 0) {
+            return $str;
+        }
+
+        // 处理负数 start
+        if ($start < 0) {
+            $start = max(0, $str_length + $start);
+        }
         if ($start >= $str_length) {
             return $str;
         }
-        if ($length === -1) {
-            $length = $str_length - $start;
+
+        // 处理 length
+        if ($length < 0) {
+            $length = $str_length - $start + $length + 1;
         }
+        if ($length <= 0) {
+            return $str;
+        }
+
         $end = $start + $length;
         if ($end > $str_length) {
             $end = $str_length;
@@ -270,19 +376,41 @@ class Str
     }
 
     /**
+     * Unicode 感知脱敏（保留头部/尾部指定字符数，中间用掩码替换）
+     *
+     * @param string $str 原字符串
+     * @param int $head 保留前几位（字符数）
+     * @param int $tail 保留后几位（字符数）
+     * @param string $mask 掩码字符
+     * @return string 脱敏后的字符串
+     */
+    public static function maskKeep(string $str, int $head = 0, int $tail = 0, string $mask = '*'): string
+    {
+        $len = mb_strlen($str, 'UTF-8');
+        if ($len <= $head + $tail) {
+            return $str;
+        }
+        $prefix = mb_substr($str, 0, $head, 'UTF-8');
+        $suffix = mb_substr($str, $len - $tail, $tail, 'UTF-8');
+        $repeat = $len - $head - $tail;
+        return $prefix . str_repeat($mask, $repeat) . $suffix;
+    }
+
+    /**
      * 手机号脱敏
      * @param string $phone 手机号
      * @param int $keepStart 保留前几位
      * @param int $keepEnd 保留后几位
+     * @param string $mask 掩码字符
      * @return string 脱敏后的手机号
      */
-    public static function maskPhone(string $phone, int $keepStart = 3, int $keepEnd = 4): string
+    public static function maskPhone(string $phone, int $keepStart = 3, int $keepEnd = 4, string $mask = '*'): string
     {
         $length = strlen($phone);
         if ($length <= $keepStart + $keepEnd) {
             return $phone;
         }
-        return self::mask($phone, $keepStart, $length - $keepStart - $keepEnd);
+        return self::mask($phone, $keepStart, $length - $keepStart - $keepEnd, $mask);
     }
 
     /**
@@ -290,24 +418,27 @@ class Str
      * @param string $idCard 身份证号
      * @param int $keepStart 保留前几位
      * @param int $keepEnd 保留后几位
+     * @param string $mask 掩码字符
      * @return string 脱敏后的身份证号
      */
-    public static function maskIdCard(string $idCard, int $keepStart = 6, int $keepEnd = 4): string
+    public static function maskIdCard(string $idCard, int $keepStart = 6, int $keepEnd = 4, string $mask = '*'): string
     {
         $length = strlen($idCard);
         if ($length <= $keepStart + $keepEnd) {
             return $idCard;
         }
-        return self::mask($idCard, $keepStart, $length - $keepStart - $keepEnd);
+        return self::mask($idCard, $keepStart, $length - $keepStart - $keepEnd, $mask);
     }
 
     /**
      * 邮箱脱敏
      * @param string $email 邮箱
-     * @param int $keepChars 保留字符数
+     * @param int $keepStart 用户名保留前几位
+     * @param int $keepEnd 用户名保留后几位
+     * @param string $mask 掩码字符
      * @return string 脱敏后的邮箱
      */
-    public static function maskEmail(string $email, int $keepChars = 2): string
+    public static function maskEmail(string $email, int $keepStart = 2, int $keepEnd = 0, string $mask = '*'): string
     {
         $parts = explode('@', $email);
         if (count($parts) !== 2) {
@@ -315,13 +446,11 @@ class Str
         }
         $username = $parts[0];
         $domain = $parts[1];
-        $usernameLength = strlen($username);
-        if ($usernameLength <= $keepChars) {
+        $usernameLength = mb_strlen($username, 'UTF-8');
+        if ($usernameLength <= $keepStart + $keepEnd) {
             return $email;
         }
-        $maskLength = $usernameLength - $keepChars;
-        $maskStr = str_repeat('*', $maskLength);
-        return substr($username, 0, $keepChars) . $maskStr . '@' . $domain;
+        return self::maskKeep($username, $keepStart, $keepEnd, $mask) . '@' . $domain;
     }
 
     /**
@@ -569,7 +698,7 @@ class Str
     public static function toCarPlate(string $str): string
     {
         $str = trim($str);
-        if (preg_match('/^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领A-Z]{1}[A-Z]{1}[A-Z0-9]{4}[A-Z0-9挂学警港澳]{1}$/', $str)) {
+        if (preg_match('/^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领A-Z]{1}[A-Z]{1}[A-Z0-9]{4}[A-Z0-9挂学警港澳]{1}$/u', $str)) {
             return $str;
         }
         return '';
@@ -769,31 +898,126 @@ class Str
         return false;
     }
 
+    /** 中国车牌省级行政区简称 */
+    private const PLATE_PROVINCES = '京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领';
+
+    /** 车牌类型常量 */
+    public const PLATE_OIL = 'oil';
+    public const PLATE_NEW_ENERGY = 'new_energy';
+    public const PLATE_MILITARY = 'military';
+    public const PLATE_EMBASSY = 'embassy';
+    public const PLATE_CONSULATE = 'consulate';
+    public const PLATE_WORK = 'work';
+    public const PLATE_SPECIAL = 'special';
+    public const PLATE_FOREIGN = 'foreign';
+    public const PLATE_ALL = 'all';
+
     /**
-     * 验证车牌号（支持新能源和特殊车辆）
+     * 验证车牌号（支持油车、新能源、军用、使馆、工作车、特种车、白名单及常见国外车牌）
+     *
+     * @param string $plate 车牌号
+     * @param string $type 验证类型：oil|new_energy|military|embassy|consulate|work|special|foreign|all
+     * @param array $whitelist 白名单数组（例如 ['京A00001', 'WJ·12345']）
+     * @return bool 是否有效
+     */
+    public static function validatePlate(string $plate, string $type = self::PLATE_ALL, array $whitelist = []): bool
+    {
+        $plate = trim(strtoupper($plate));
+        if ($plate === '') {
+            return false;
+        }
+
+        // 白名单优先命中（支持大小写不敏感）
+        if (self::isPlateInWhitelist($plate, $whitelist)) {
+            return true;
+        }
+
+        $patterns = self::platePatterns();
+
+        if ($type === self::PLATE_ALL) {
+            foreach ($patterns as $p) {
+                if (preg_match($p, $plate)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (!isset($patterns[$type])) {
+            throw new \InvalidArgumentException("Unsupported plate type: {$type}");
+        }
+
+        return preg_match($patterns[$type], $plate) === 1;
+    }
+
+    /**
+     * 判断车牌是否在白名单中
+     */
+    public static function isPlateInWhitelist(string $plate, array $whitelist): bool
+    {
+        if ($whitelist === []) {
+            return false;
+        }
+        $plate = trim(strtoupper($plate));
+        foreach ($whitelist as $item) {
+            if (strtoupper(trim((string)$item)) === $plate) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 识别车牌类型
+     * @return string|null 返回类型常量，无法识别返回 null
+     */
+    public static function plateType(string $plate): ?string
+    {
+        $plate = trim(strtoupper($plate));
+        foreach (self::platePatterns() as $type => $pattern) {
+            if (preg_match($pattern, $plate)) {
+                return $type;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 车牌号正则规则库
+     * @return array<string, string>
+     */
+    private static function platePatterns(): array
+    {
+        $provinces = self::PLATE_PROVINCES;
+
+        return [
+            // 普通蓝牌/黄牌/黑牌/港澳学警挂车等（燃油车）
+            self::PLATE_OIL => '/^[' . $provinces . '][A-Z][A-Z0-9]{4}[A-Z0-9挂学警港澳]$/u',
+            // 新能源车牌（小型/大型）
+            self::PLATE_NEW_ENERGY => '/^[' . $provinces . '][A-Z]([0-9]{5}[DF]|[DF][0-9]{5})$/u',
+            // 军车（如 京V12345 或 XY12345）
+            self::PLATE_MILITARY => '/^[' . $provinces . ']V[A-Z0-9]{5}$|^[A-Z]{2}[0-9]{5}$/u',
+            // 使馆车牌（如 使12345）
+            self::PLATE_EMBASSY => '/^使[0-9]{4,6}$/u',
+            // 领事馆车牌（如 领A1234）
+            self::PLATE_CONSULATE => '/^领[A-Z0-9]{4,6}$/u',
+            // 工作车/教练车等（以“工”“教”等结尾，按用户需要可扩展）
+            self::PLATE_WORK => '/^[' . $provinces . '][A-Z][A-Z0-9]{4}[工教]$/u',
+            // 特种车（如 京V0001 京A·00001 等）
+            self::PLATE_SPECIAL => '/^[' . $provinces . '][A-Z]0[0-9]{4}$/u',
+            // 常见国外车牌（简化：US 1-8位，EU AA-1234）
+            self::PLATE_FOREIGN => '/^[A-Z0-9]{1,8}$|^[A-Z]{1,3}[-\s]?[A-Z0-9]{1,4}$/u',
+        ];
+    }
+
+    /**
+     * 验证车牌号（兼容旧方法别名）
      * @param string $plate 车牌号
      * @return bool 是否有效
      */
     public static function validateCarPlate(string $plate): bool
     {
-        $plate = trim(strtoupper($plate));
-
-        // 普通蓝牌
-        if (preg_match('/^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领A-Z]{1}[A-Z]{1}[A-Z0-9]{4}[A-Z0-9挂学警港澳]{1}$/', $plate)) {
-            return true;
-        }
-
-        // 新能源车牌
-        if (preg_match('/^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领A-Z]{1}[A-Z]{1}(([0-9]{5}[DF])|([DF][0-9]{5}))$/', $plate)) {
-            return true;
-        }
-
-        // 使馆车牌
-        if (preg_match('/^[使领]{1}[A-Z0-9]{4}[A-Z0-9]{1}$/', $plate)) {
-            return true;
-        }
-
-        return false;
+        return self::validatePlate($plate);
     }
 
     /**

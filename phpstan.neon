@@ -9,6 +9,5 @@ parameters:
         - '#Unsafe usage of new static\(\)#'
         - '#Property .* is never read, only written#'
         - '#Variable \$contentType on left side of \?\? always exists#'
-        - '#should return float but returns string#'
         - '#Method Kode\\Crypto\\Crypto::getInstance\(\) should return static\(Kode\\Crypto\\Crypto\) but returns Kode\\Crypto\\Crypto#'
         - '#Strict comparison using === between string and false will always evaluate to false#'
