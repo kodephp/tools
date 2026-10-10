@@ -528,15 +528,7 @@ class Arr
      */
     public static function find(array $array, callable $callback): mixed
     {
-        if (PHP_VERSION_ID >= 80400) {
-            return array_find($array, $callback);
-        }
-        foreach ($array as $key => $value) {
-            if ($callback($value, $key)) {
-                return $value;
-            }
-        }
-        return null;
+        return \array_find($array, $callback);
     }
 
     /**
@@ -547,15 +539,7 @@ class Arr
      */
     public static function findKey(array $array, callable $callback): string|int|null
     {
-        if (PHP_VERSION_ID >= 80400) {
-            return array_find_key($array, $callback);
-        }
-        foreach ($array as $key => $value) {
-            if ($callback($value, $key)) {
-                return $key;
-            }
-        }
-        return null;
+        return \array_find_key($array, $callback);
     }
 
     /**
@@ -764,8 +748,8 @@ class Arr
         if (empty($array)) {
             return null;
         }
-        if (PHP_VERSION_ID >= 80400) {
-            return array_first($array);
+        if (\PHP_VERSION_ID >= 80500) {
+            return \array_first($array);
         }
         return reset($array);
     }
@@ -780,8 +764,8 @@ class Arr
         if (empty($array)) {
             return null;
         }
-        if (PHP_VERSION_ID >= 80400) {
-            return array_last($array);
+        if (\PHP_VERSION_ID >= 80500) {
+            return \array_last($array);
         }
         return end($array);
     }
@@ -998,15 +982,7 @@ class Arr
      */
     public static function any(array $array, callable $callback): bool
     {
-        if (PHP_VERSION_ID >= 80400) {
-            return array_any($array, $callback);
-        }
-        foreach ($array as $key => $value) {
-            if ($callback($value, $key)) {
-                return true;
-            }
-        }
-        return false;
+        return \array_any($array, $callback);
     }
 
     /**
@@ -1017,15 +993,7 @@ class Arr
      */
     public static function all(array $array, callable $callback): bool
     {
-        if (PHP_VERSION_ID >= 80400) {
-            return array_all($array, $callback);
-        }
-        foreach ($array as $key => $value) {
-            if (!$callback($value, $key)) {
-                return false;
-            }
-        }
-        return true;
+        return \array_all($array, $callback);
     }
 
     /**
