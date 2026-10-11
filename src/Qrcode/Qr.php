@@ -343,7 +343,7 @@ class Qr
         return (new self($url))->size($size)->toDataUri();
     }
 
-    public static function wifi(string $ssid, string $password, string $encryption = 'WPA', bool $hidden = false): self
+    public static function wifi(string $ssid, #[\SensitiveParameter] string $password, string $encryption = 'WPA', bool $hidden = false): self
     {
         $wifiString = sprintf('WIFI:T:%s;S:%s;P:%s;H:%s;;', $encryption, $ssid, $password, $hidden ? 'true' : 'false');
         return new self($wifiString);

@@ -414,7 +414,7 @@ class Curl
      * @param string $token Token
      * @return static
      */
-    public function authorization(string $token): static
+    public function authorization(#[\SensitiveParameter] string $token): static
     {
         return $this->header('Authorization', 'Bearer ' . $token);
     }
@@ -424,7 +424,7 @@ class Curl
      * @param string $token Token
      * @return static
      */
-    public function bearer(string $token): static
+    public function bearer(#[\SensitiveParameter] string $token): static
     {
         return $this->authorization($token);
     }
@@ -435,7 +435,7 @@ class Curl
      * @param string $password 密码
      * @return static
      */
-    public function basicAuth(string $username, string $password): static
+    public function basicAuth(string $username, #[\SensitiveParameter] string $password): static
     {
         return $this->header('Authorization', 'Basic ' . base64_encode($username . ':' . $password));
     }
@@ -581,7 +581,7 @@ class Curl
      * @param string|null $password 密码
      * @return static
      */
-    public function sslCert(string $certPath, ?string $keyPath = null, ?string $password = null): static
+    public function sslCert(string $certPath, ?string $keyPath = null, #[\SensitiveParameter] ?string $password = null): static
     {
         if (!file_exists($certPath)) {
             throw new InvalidArgumentException("SSL cert not found: {$certPath}");

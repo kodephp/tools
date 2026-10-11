@@ -170,7 +170,7 @@ if (!function_exists('crypto_md5')) {
      * @param string $salt 盐
      * @return string 加密后的字符串
      */
-    function crypto_md5(string $str, string $salt = ''): string
+    function crypto_md5(string $str, #[\SensitiveParameter] string $salt = ''): string
     {
         return Crypto::md5($str, $salt);
     }
@@ -971,7 +971,7 @@ if (!function_exists('qr_wifi')) {
      * @param int $size 大小
      * @return Qr 二维码实例
      */
-    function qr_wifi(string $ssid, string $password, string $encryption = 'wpa', bool $hidden = false, int $size = 300): Qr
+    function qr_wifi(string $ssid, #[\SensitiveParameter] string $password, string $encryption = 'wpa', bool $hidden = false, int $size = 300): Qr
     {
         return Qr::wifi($ssid, $password, $encryption, $hidden)->size($size);
     }
@@ -1271,7 +1271,7 @@ if (!function_exists('security_csrf_verify')) {
      * @param bool $clear 是否一次性
      * @return bool 是否有效
      */
-    function security_csrf_verify(string $token, ?string $sessionKey = null, bool $clear = false): bool
+    function security_csrf_verify(#[\SensitiveParameter] string $token, ?string $sessionKey = null, bool $clear = false): bool
     {
         return Security::csrfVerify($token, $sessionKey, $clear);
     }
@@ -1285,7 +1285,7 @@ if (!function_exists('security_sign')) {
      * @param int|null $timestamp 时间戳
      * @return string 签名
      */
-    function security_sign(array $data, string $secret, ?int $timestamp = null): string
+    function security_sign(array $data, #[\SensitiveParameter] string $secret, ?int $timestamp = null): string
     {
         return Security::sign($data, $secret, $timestamp);
     }
@@ -1299,7 +1299,7 @@ if (!function_exists('security_sign_verify')) {
      * @param int $expire 有效期（秒）
      * @return bool 是否有效
      */
-    function security_sign_verify(array $data, string $secret, int $expire = 300): bool
+    function security_sign_verify(array $data, #[\SensitiveParameter] string $secret, int $expire = 300): bool
     {
         return Security::signVerify($data, $secret, $expire);
     }
@@ -1403,7 +1403,7 @@ if (!function_exists('security_verify_nonce')) {
      * @param int $ttl 有效时间（秒）
      * @return bool 是否首次有效
      */
-    function security_verify_nonce(string $token, string $namespace = 'nonce', int $ttl = 300): bool
+    function security_verify_nonce(#[\SensitiveParameter] string $token, string $namespace = 'nonce', int $ttl = 300): bool
     {
         return Security::verifyNonce($token, $namespace, $ttl);
     }

@@ -368,7 +368,7 @@ class Crypto extends Base
      * @param string $salt 盐值
      * @return string 哈希值
      */
-    public static function md5(string $str, string $salt = ''): string
+    public static function md5(string $str, #[\SensitiveParameter] string $salt = ''): string
     {
         if (strlen($salt) > 0) {
             return hash('md5', $str . $salt);
@@ -382,7 +382,7 @@ class Crypto extends Base
      * @param string $salt 盐值
      * @return string 哈希值
      */
-    public static function sha1(string $str, string $salt = ''): string
+    public static function sha1(string $str, #[\SensitiveParameter] string $salt = ''): string
     {
         if (strlen($salt) > 0) {
             return hash('sha1', $str . $salt);
@@ -396,7 +396,7 @@ class Crypto extends Base
      * @param string $salt 盐值
      * @return string 哈希值
      */
-    public static function sha256(string $str, string $salt = ''): string
+    public static function sha256(string $str, #[\SensitiveParameter] string $salt = ''): string
     {
         if (strlen($salt) > 0) {
             return hash('sha256', $str . $salt);
@@ -590,7 +590,7 @@ class Crypto extends Base
     /**
      * MD5哈希别名（带crypto前缀，避免与原生md5冲突）
      */
-    public static function cryptoMd5(string $str, string $salt = ''): string
+    public static function cryptoMd5(string $str, #[\SensitiveParameter] string $salt = ''): string
     {
         return self::md5($str, $salt);
     }
@@ -598,7 +598,7 @@ class Crypto extends Base
     /**
      * SHA1哈希别名
      */
-    public static function cryptoSha1(string $str, string $salt = ''): string
+    public static function cryptoSha1(string $str, #[\SensitiveParameter] string $salt = ''): string
     {
         return self::sha1($str, $salt);
     }
@@ -606,7 +606,7 @@ class Crypto extends Base
     /**
      * SHA256哈希别名
      */
-    public static function cryptoSha256(string $str, string $salt = ''): string
+    public static function cryptoSha256(string $str, #[\SensitiveParameter] string $salt = ''): string
     {
         return self::sha256($str, $salt);
     }

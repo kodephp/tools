@@ -160,7 +160,7 @@ class Ip
      * @param string $apiKey 可选的位置服务API密钥
      * @return array|null 位置信息，如果不可用则返回null
      */
-    public static function getLocation(string $ip, ?string $apiKey = null): ?array
+    public static function getLocation(string $ip, #[\SensitiveParameter] ?string $apiKey = null): ?array
     {
         if (!self::isValid($ip) || self::isPrivate($ip)) {
             return null;

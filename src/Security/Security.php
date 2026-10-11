@@ -169,7 +169,7 @@ class Security
      * @param int $ttl 有效时间（秒）
      * @return bool 是否首次有效
      */
-    public static function verifyNonce(string $token, string $namespace = 'nonce', int $ttl = self::DEFAULT_NONCE_TTL): bool
+    public static function verifyNonce(#[\SensitiveParameter] string $token, string $namespace = 'nonce', int $ttl = self::DEFAULT_NONCE_TTL): bool
     {
         if ($token === '' || !str_contains($token, ':')) {
             return false;
@@ -208,7 +208,7 @@ class Security
      * @param bool $clear 验证成功后是否清除 Token（一次性校验）
      * @return bool 是否有效
      */
-    public static function csrfVerify(string $token, ?string $sessionKey = null, bool $clear = false): bool
+    public static function csrfVerify(#[\SensitiveParameter] string $token, ?string $sessionKey = null, bool $clear = false): bool
     {
         if ($token === '') {
             return false;
@@ -243,7 +243,7 @@ class Security
     /**
      * 验证一次性 CSRF Token
      */
-    public static function csrfVerifyOnce(string $token, ?string $sessionKey = null): bool
+    public static function csrfVerifyOnce(#[\SensitiveParameter] string $token, ?string $sessionKey = null): bool
     {
         $key = ($sessionKey ?? '_kode_csrf_token') . '_once';
         return self::csrfVerify($token, $key, true);
@@ -257,7 +257,7 @@ class Security
      * @param int|null $timestamp 时间戳，为 null 时使用当前时间
      * @return string 签名结果
      */
-    public static function sign(array $data, string $secret, ?int $timestamp = null): string
+    public static function sign(array $data, #[\SensitiveParameter] string $secret, ?int $timestamp = null): string
     {
         if (strlen($secret) < 16) {
             throw new InvalidArgumentException('Secret must be at least 16 characters');
@@ -275,7 +275,7 @@ class Security
      * @param int $expire 签名有效期（秒），0 表示不校验时间
      * @return bool 是否有效
      */
-    public static function signVerify(array $data, string $secret, int $expire = self::SIGN_EXPIRE): bool
+    public static function signVerify(array $data, #[\SensitiveParameter] string $secret, int $expire = self::SIGN_EXPIRE): bool
     {
         if (strlen($secret) < 16) {
             throw new InvalidArgumentException('Secret must be at least 16 characters');
@@ -307,7 +307,7 @@ class Security
      * @param string $secret 密钥
      * @return array 包含 _time、_sign 的数据
      */
-    public static function signPayload(array $data, string $secret): array
+    public static function signPayload(array $data, #[\SensitiveParameter] string $secret): array
     {
         $timestamp = time();
         $data['_time'] = $timestamp;
