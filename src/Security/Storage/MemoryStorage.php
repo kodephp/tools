@@ -18,6 +18,7 @@ class MemoryStorage implements RateLimiterStorageInterface
     /** @var array<string, array{requests: list<float>}> */
     private static array $buckets = [];
 
+    #[\Override]
     public function hit(string $key, int $maxAttempts, int $windowSeconds): int
     {
         $windowStart = microtime(true) - $windowSeconds;
@@ -34,6 +35,7 @@ class MemoryStorage implements RateLimiterStorageInterface
         return $remaining;
     }
 
+    #[\Override]
     public function remaining(string $key, int $maxAttempts, int $windowSeconds): int
     {
         if ($maxAttempts <= 0 || $windowSeconds <= 0) {
@@ -49,12 +51,14 @@ class MemoryStorage implements RateLimiterStorageInterface
         return $maxAttempts - count(self::$buckets[$key]['requests']);
     }
 
+    #[\Override]
     public function reset(string $key): bool
     {
         unset(self::$buckets[$key]);
         return true;
     }
 
+    #[\Override]
     public function available(): bool
     {
         return true;

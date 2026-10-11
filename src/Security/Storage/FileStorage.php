@@ -45,6 +45,7 @@ class FileStorage implements RateLimiterStorageInterface
         return $this->dir;
     }
 
+    #[\Override]
     public function hit(string $key, int $maxAttempts, int $windowSeconds): int
     {
         $file = $this->file($key);
@@ -76,6 +77,7 @@ class FileStorage implements RateLimiterStorageInterface
         return $remaining;
     }
 
+    #[\Override]
     public function remaining(string $key, int $maxAttempts, int $windowSeconds): int
     {
         if ($maxAttempts <= 0 || $windowSeconds <= 0) {
@@ -105,6 +107,7 @@ class FileStorage implements RateLimiterStorageInterface
         return $maxAttempts - count($record['requests']);
     }
 
+    #[\Override]
     public function reset(string $key): bool
     {
         $file = $this->file($key);
@@ -114,6 +117,7 @@ class FileStorage implements RateLimiterStorageInterface
         return true;
     }
 
+    #[\Override]
     public function available(): bool
     {
         return true;

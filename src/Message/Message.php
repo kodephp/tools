@@ -148,6 +148,7 @@ class Message
         };
     }
 
+    #[\Override]
     public function __toString(): string
     {
         return $this->buildJson();

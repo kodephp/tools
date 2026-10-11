@@ -73,6 +73,7 @@ class Crypto extends Base
     /**
      * 初始化配置
      */
+    #[\Override]
     protected static function initialize(): void
     {
         if (empty(static::$config)) {
@@ -567,6 +568,7 @@ class Crypto extends Base
      * @param string|null $key 密钥
      * @return static 实例
      */
+    #[\Override]
     public static function getInstance(?string $key = null): static
     {
         if (self::$instance === null || $key !== null) {
@@ -578,6 +580,7 @@ class Crypto extends Base
     /**
      * 重置单例
      */
+    #[\Override]
     public static function reset(): void
     {
         self::$instance = null;
@@ -638,6 +641,7 @@ class Crypto extends Base
      * @param array $arguments 参数
      * @return mixed
      */
+    #[\Override]
     public static function __callStatic(string $name, array $arguments): mixed
     {
         $staticMethods = [
@@ -665,6 +669,7 @@ class Crypto extends Base
      * @param array $arguments 参数
      * @return mixed
      */
+    #[\Override]
     public function __call(string $name, array $arguments): mixed
     {
         $methods = ['encrypt', 'decrypt', 'key', 'engine', 'mode'];

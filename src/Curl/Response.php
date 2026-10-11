@@ -448,6 +448,7 @@ class Response
      * 转为字符串
      * @return string 字符串
      */
+    #[\Override]
     public function __toString(): string
     {
         return $this->toString();

@@ -22,6 +22,7 @@ class ApcuStorage implements RateLimiterStorageInterface
         $this->prefix = $prefix;
     }
 
+    #[\Override]
     public function hit(string $key, int $maxAttempts, int $windowSeconds): int
     {
         $cacheKey = $this->key($key);
@@ -41,6 +42,7 @@ class ApcuStorage implements RateLimiterStorageInterface
         return $remaining;
     }
 
+    #[\Override]
     public function remaining(string $key, int $maxAttempts, int $windowSeconds): int
     {
         if ($maxAttempts <= 0 || $windowSeconds <= 0) {
@@ -59,11 +61,13 @@ class ApcuStorage implements RateLimiterStorageInterface
         return $maxAttempts - count($requests);
     }
 
+    #[\Override]
     public function reset(string $key): bool
     {
         return apcu_delete($this->key($key)) === true || apcu_exists($this->key($key)) === false;
     }
 
+    #[\Override]
     public function available(): bool
     {
         return extension_loaded('apcu') && function_exists('apcu_store');

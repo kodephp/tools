@@ -181,6 +181,7 @@ class Base
      * 转为字符串
      * @return string JSON字符串
      */
+    #[\Override]
     public function __toString(): string
     {
         return $this->toJson();

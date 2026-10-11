@@ -25,6 +25,7 @@ class RedisStorage implements RateLimiterStorageInterface
         $this->prefix = $prefix;
     }
 
+    #[\Override]
     public function hit(string $key, int $maxAttempts, int $windowSeconds): int
     {
         $cacheKey = $this->key($key);
@@ -45,6 +46,7 @@ class RedisStorage implements RateLimiterStorageInterface
         return $remaining;
     }
 
+    #[\Override]
     public function remaining(string $key, int $maxAttempts, int $windowSeconds): int
     {
         if ($maxAttempts <= 0 || $windowSeconds <= 0) {
@@ -62,11 +64,13 @@ class RedisStorage implements RateLimiterStorageInterface
         return $maxAttempts - $count;
     }
 
+    #[\Override]
     public function reset(string $key): bool
     {
         return (bool)$this->redis->del($this->key($key));
     }
 
+    #[\Override]
     public function available(): bool
     {
         return extension_loaded('redis') && class_exists(Redis::class);
