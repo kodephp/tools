@@ -551,45 +551,6 @@ if (!function_exists('str_snake')) {
     }
 }
 
-if (!function_exists('str_contains')) {
-    /**
-     * 字符串是否包含
-     * @param string $str 字符串
-     * @param string $needle 查找字符串
-     * @return bool 是否包含
-     */
-    function str_contains(string $str, string $needle): bool
-    {
-        return Str::contains($str, $needle);
-    }
-}
-
-if (!function_exists('str_starts_with')) {
-    /**
-     * 字符串是否以开头
-     * @param string $str 字符串
-     * @param string $prefix 前缀
-     * @return bool 是否以开头
-     */
-    function str_starts_with(string $str, string $prefix): bool
-    {
-        return Str::startsWith($str, $prefix);
-    }
-}
-
-if (!function_exists('str_ends_with')) {
-    /**
-     * 字符串是否以结尾
-     * @param string $str 字符串
-     * @param string $suffix 后缀
-     * @return bool 是否以结尾
-     */
-    function str_ends_with(string $str, string $suffix): bool
-    {
-        return Str::endsWith($str, $suffix);
-    }
-}
-
 if (!function_exists('str_replace_array')) {
     /**
      * 字符串替换多个
