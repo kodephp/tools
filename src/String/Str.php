@@ -935,12 +935,7 @@ class Str
         $patterns = self::platePatterns();
 
         if ($type === self::PLATE_ALL) {
-            foreach ($patterns as $p) {
-                if (preg_match($p, $plate)) {
-                    return true;
-                }
-            }
-            return false;
+            return array_any($patterns, fn($p) => preg_match($p, $plate));
         }
 
         if (!isset($patterns[$type])) {
@@ -959,12 +954,7 @@ class Str
             return false;
         }
         $plate = trim(strtoupper($plate));
-        foreach ($whitelist as $item) {
-            if (strtoupper(trim((string)$item)) === $plate) {
-                return true;
-            }
-        }
-        return false;
+        return array_any($whitelist, fn($item) => strtoupper(trim((string)$item)) === $plate);
     }
 
     /**
@@ -974,12 +964,7 @@ class Str
     public static function plateType(string $plate): ?string
     {
         $plate = trim(strtoupper($plate));
-        foreach (self::platePatterns() as $type => $pattern) {
-            if (preg_match($pattern, $plate)) {
-                return $type;
-            }
-        }
-        return null;
+        return array_find_key(self::platePatterns(), fn($pattern, $type) => preg_match($pattern, $plate));
     }
 
     /**

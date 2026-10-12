@@ -97,13 +97,7 @@ class Ip
             ['start' => ip2long('169.254.0.0'), 'end' => ip2long('169.254.255.255')]
         ];
         
-        foreach ($privateRanges as $range) {
-            if ($long >= $range['start'] && $long <= $range['end']) {
-                return true;
-            }
-        }
-        
-        return false;
+        return array_any($privateRanges, fn($range) => $long >= $range['start'] && $long <= $range['end']);
     }
 
     /**

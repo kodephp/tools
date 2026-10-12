@@ -550,12 +550,7 @@ class Arr
      */
     public static function some(array $array, callable $callback): bool
     {
-        foreach ($array as $key => $value) {
-            if ($callback($value, $key)) {
-                return true;
-            }
-        }
-        return false;
+        return array_any($array, fn($value, $key) => $callback($value, $key));
     }
 
     /**
@@ -566,12 +561,7 @@ class Arr
      */
     public static function every(array $array, callable $callback): bool
     {
-        foreach ($array as $key => $value) {
-            if (!$callback($value, $key)) {
-                return false;
-            }
-        }
-        return true;
+        return array_all($array, fn($value, $key) => $callback($value, $key));
     }
 
     /**
