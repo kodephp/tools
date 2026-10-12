@@ -1,7 +1,7 @@
 {
     "name": "kode/tools",
-    "version": "2.0.2",
-    "description": "PHP8.1+通用工具包，包含消息体、数组处理、字符串处理、时间处理、加解密、IP、地理计算、Curl、二维码、全局辅助函数等",
+    "version": "2.1.0",
+    "description": "PHP8.4+通用工具包，包含消息体、数组处理、字符串处理、时间处理、加解密、IP、地理计算、Curl、二维码、全局辅助函数等",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -22,7 +22,7 @@
         "pipe",
         "pipeline"
     ],
-    "homepage": "https://github.com/kode/tools",
+    "homepage": "https://github.com/kodephp/tools",
     "authors": [
         {
             "name": "Kode Team",
@@ -30,8 +30,9 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/kode/tools/issues",
-        "docs": "https://github.com/kode/tools/blob/master/README.md"
+        "issues": "https://github.com/kodephp/tools/issues",
+        "source": "https://github.com/kodephp/tools",
+        "docs": "https://github.com/kodephp/tools/blob/master/README.md"
     },
     "funding": [
         {
@@ -47,7 +48,7 @@
         "ext-mbstring": "*",
         "ext-bcmath": "*",
         "ext-gd": "*",
-        "endroid/qr-code": "^6.0"
+        "endroid/qr-code": "^6.1"
     },
     "suggest": {
         "ext-apcu": "APCu 扩展 - 用于 ApcuStorage 限流存储"

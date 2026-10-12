@@ -1039,45 +1039,69 @@ Security::setRateLimiterStorage(new RedisStorage($redis));
 
 ## 二维码模块
 
+基于 `endroid/qr-code`（^6.1，PHP 8.4+）的流式二维码封装。
+
 ### 特性
 
-- ✅ 生成二维码
-- ✅ 支持Logo
-- ✅ 多种编码模式
+- ✅ PNG / SVG / WebP / EPS 四种输出格式
+- ✅ Logo、文字标签、容错级别、前景/背景色、圆角样式
+- ✅ URL / WiFi / vCard / 邮件 / 电话 / 短信 / 地理 / 比特币 / 日历 一键编码
+- ✅ Data URI（Base64）输出与内容寻址突发缓存（`Qr::useBurstCache()`）
 
 ### 快速开始
 
 ```php
 use Kode\Qrcode\Qr;
 
-// 生成二维码图片
-$qr = Qr::text('https://example.com')
+// 生成二维码并保存
+Qr::create('https://example.com')
     ->size(300)
     ->margin(10)
-    ->generate();
-
-// 保存到文件
-Qr::text('https://example.com')
     ->save('qrcode.png');
 
-// 生成Base64
-$base64 = Qr::text('https://example.com')
-    ->base64();
+// Data URI（Base64）
+$dataUri = Qr::create('https://example.com')->toDataUri();
+
+// 原始字节 / GdImage
+$bytes = Qr::create('https://example.com')->toString();
+$image = Qr::create('https://example.com')->output(); // PNG/WebP 返回 GdImage
+
+// 其它输出格式
+$svg = Qr::create('https://example.com')->asSvg()->toString();
+
+// 带标签与 Logo（字体缺省使用上游内置 Open Sans）
+Qr::create('https://example.com')
+    ->logo('logo.png')
+    ->label('Kode', 16)
+    ->asPng()
+    ->save('qr.png');
 ```
 
 ### 方法说明
 
 | 方法 | 说明 | 示例 |
 |------|------|------|
-| `Qr::text(string $content)` | 设置内容 | `Qr::text('hello')` |
-| `Qr::size(int $size)` | 二维码尺寸 | `Qr::size(300)` |
-| `Qr::margin(int $margin)` | 边距 | `Qr::margin(10)` |
-| `Qr::foregroundColor(string $color)` | 前景色 | `Qr::foregroundColor('#000000')` |
-| `Qr::backgroundColor(string $color)` | 背景色 | `Qr::backgroundColor('#ffffff')` |
-| `Qr::logo(string $path)` | Logo路径 | `Qr::logo('logo.png')` |
-| `Qr::generate()` | 生成图片 | `$qr->generate()` |
-| `Qr::save(string $path)` | 保存文件 | `$qr->save('qr.png')` |
-| `Qr::base64()` | 返回Base64 | `$qr->base64()` |
+| `Qr::create(string $text = '')` | 创建实例 | `Qr::create('hello')` |
+| `->text(string $text)` | 设置内容 | `->text('hello')` |
+| `->size(int $size)` | 二维码尺寸（下限 50） | `->size(300)` |
+| `->margin(int $margin)` | 边距（下限 0） | `->margin(10)` |
+| `->errorCorrectionLevel(int $level)` | 容错级别 1-5 | `->errorCorrectionLevel(4)` |
+| `->foregroundColor(int $r, int $g, int $b)` | 前景色 RGB（0-255 钳制） | `->foregroundColor(0, 0, 0)` |
+| `->backgroundColor(int $r, int $g, int $b)` | 背景色 RGB（0-255 钳制） | `->backgroundColor(255, 255, 255)` |
+| `->label(string $text, int $fontSize = 16, ?string $font = null)` | 底部标签（缺省用上游内置字体） | `->label('Kode')` |
+| `->logo(string $path, float $scale = 0.3)` | 中心 Logo | `->logo('logo.png')` |
+| `->roundStyle(string $mode)` | 圆角样式 `enlarge`/`margin`/`none`/`shrink` | `->roundStyle('enlarge')` |
+| `->asPng()` / `->asSvg()` / `->asWebP()` / `->asEps()` | 输出格式 | `->asSvg()` |
+| `->toString()` | 原始图片字节 | `->toString()` |
+| `->toDataUri()` | `data:` URI（Base64） | `->toDataUri()` |
+| `->save(string $path)` | 保存文件 | `->save('qr.png')` |
+| `->output()` | PNG/WebP 返回 `GdImage`，其余返回字符串 | `->output()` |
+| `Qr::make(string $text, array $options)` | 选项数组批量配置（`size`/`margin`/`error_level`/`fg_color`/`bg_color`/`round_style`/`label`/`label_font_size`/`label_font`/`logo`/`logo_scale`/`encoding`/`format`） | `Qr::make($t, ['size' => 300, 'format' => 'svg'])` |
+| `Qr::useBurstCache(bool $use = true)` | 内容寻址突发缓存（写入 `sys_get_temp_dir()/qrcode_burst`） | `Qr::useBurstCache()` |
+
+预置编码器：`Qr::url()` `Qr::wifi()` `Qr::vcard()` `Qr::email()` `Qr::phone()` `Qr::sms()` `Qr::geo()` `Qr::bitcoin()` `Qr::event()`
+
+> `roundDots()` / `circularDots()` / `gradient()` 自 2.1.0 起标记 `#[\Deprecated]`（上游 endroid/qr-code 不支持对应渲染，历史上即为无操作）；圆角请用 `roundStyle()`。
 
 ## 全局辅助函数
 
@@ -1236,8 +1260,8 @@ curl_post('https://api.example.com/users', ['name' => '张三']);
 // 二维码函数
 qr_text('https://example.com')->save('qrcode.png');
 // 结果: 保存二维码图片
-qr_wifi('MyWiFi', 'password123')->base64();
-// 结果: Base64编码的二维码
+qr_wifi('MyWiFi', 'password123')->toDataUri();
+// 结果: Data URI（Base64 编码的二维码）
 
 // 辅助函数
 uuid();

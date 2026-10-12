@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Kode\Qrcode;
 
+use Endroid\QrCode\Bacon\MatrixFactory;
 use Endroid\QrCode\Color\Color;
 use Endroid\QrCode\Color\ColorInterface;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\Label\Font\Font;
 use Endroid\QrCode\Label\Label;
 use Endroid\QrCode\Label\LabelAlignment;
 use Endroid\QrCode\Label\Margin\Margin;
@@ -103,13 +105,13 @@ class Qr
 
     public function foregroundColor(int $red, int $green, int $blue): self
     {
-        $this->foregroundColor = new Color($red, $green, $blue);
+        $this->foregroundColor = self::color($red, $green, $blue);
         return $this;
     }
 
     public function backgroundColor(int $red, int $green, int $blue): self
     {
-        $this->backgroundColor = new Color($red, $green, $blue);
+        $this->backgroundColor = self::color($red, $green, $blue);
         return $this;
     }
 
@@ -121,14 +123,21 @@ class Qr
 
     public function label(string $text, int $fontSize = 16, ?string $font = null): self
     {
-        $fontPath = $font ?? dirname(__DIR__, 3) . '/assets/fonts/arial.ttf';
-        $this->label = new Label(
-            $text,
-            new \Endroid\QrCode\Label\Font\Font($fontPath, $fontSize),
-            LabelAlignment::Center,
-            new Margin(0, 10, 10, 10),
-            $this->foregroundColor ?? new Color(0, 0, 0)
-        );
+        $textColor = $this->foregroundColor ?? new Color(0, 0, 0);
+        $this->label = $font === null
+            ? new Label(
+                $text,
+                alignment: LabelAlignment::Center,
+                margin: new Margin(0, 10, 10, 10),
+                textColor: $textColor
+            )
+            : new Label(
+                $text,
+                new Font($font, $fontSize),
+                LabelAlignment::Center,
+                new Margin(0, 10, 10, 10),
+                $textColor
+            );
         return $this;
     }
 
@@ -144,12 +153,14 @@ class Qr
         return $this;
     }
 
+    #[\Deprecated('上游 endroid/qr-code 无圆点渲染能力，本方法为无操作；请改用 roundStyle("enlarge") 获得圆角模块效果', since: '2.1.0')]
     public function roundDots(bool $use = true): self
     {
         $this->roundDots = $use;
         return $this;
     }
 
+    #[\Deprecated('上游 endroid/qr-code 无圆点尺寸缩放能力，本方法为无操作；请改用 roundStyle("enlarge")', since: '2.1.0')]
     public function circularDots(bool $use = true, int $sizeScale = 11): self
     {
         $this->useCircularDots = $use;
@@ -157,6 +168,7 @@ class Qr
         return $this;
     }
 
+    #[\Deprecated('上游 endroid/qr-code 不支持渐变色，本方法为无操作；请改用 foregroundColor()/backgroundColor()', since: '2.1.0')]
     public function gradient(int $startRed, int $startGreen, int $startBlue, int $endRed, int $endGreen, int $endBlue, string $direction = 'horizontal'): self
     {
         $this->gradientStartColor = new Color($startRed, $startGreen, $startBlue);
@@ -239,31 +251,88 @@ class Qr
     public function build(): WriterInterface
     {
         $writerClass = $this->writerClass;
-        $writer = new $writerClass();
-        if (self::$useBurstCache && method_exists($writer, 'setBurstCacheDirectory')) {
-            $writer->setBurstCacheDirectory(sys_get_temp_dir() . '/qrcode_burst');
-        }
-        return $writer;
+        return new $writerClass();
     }
 
-    private function writeResult(): ResultInterface
+    private function mimeType(): string
     {
-        $qrCode = $this->createQrCode();
-        $writer = $this->build();
-        return $writer->write($qrCode, $this->logo, $this->label);
-    }
-
-    public function toDataUri(): string
-    {
-        $result = $this->writeResult();
-        $mimeType = match ($this->writerClass) {
-            PngWriter::class => 'image/png',
+        return match ($this->writerClass) {
             SvgWriter::class => 'image/svg+xml',
             WebPWriter::class => 'image/webp',
             EpsWriter::class => 'application/eps',
             default => 'image/png',
         };
-        return 'data:' . $mimeType . ';base64,' . base64_encode($result->getString());
+    }
+
+    private function extension(): string
+    {
+        return match ($this->writerClass) {
+            SvgWriter::class => 'svg',
+            WebPWriter::class => 'webp',
+            EpsWriter::class => 'eps',
+            default => 'png',
+        };
+    }
+
+    /**
+     * 突发缓存文件路径：以全部渲染输入的内容哈希命名，内容寻址、不可变。
+     * 序列化失败（如上游值对象未来不可序列化）时返回 null，跳过缓存。
+     */
+    private function burstCacheFile(): ?string
+    {
+        try {
+            $payload = serialize([
+                $this->text,
+                $this->encoding,
+                $this->errorCorrectionLevel,
+                $this->size,
+                $this->margin,
+                $this->roundBlockSizeMode,
+                $this->foregroundColor,
+                $this->backgroundColor,
+                $this->logo,
+                $this->label,
+                $this->writerClass,
+            ]);
+        } catch (\Throwable) {
+            return null;
+        }
+        return sys_get_temp_dir() . '/qrcode_burst/' . sha1($payload) . '.' . $this->extension();
+    }
+
+    private function writeResult(): ResultInterface
+    {
+        $qrCode = $this->createQrCode();
+        $cacheFile = self::$useBurstCache ? $this->burstCacheFile() : null;
+
+        if ($cacheFile !== null && is_file($cacheFile)) {
+            $cached = file_get_contents($cacheFile);
+            if ($cached !== false) {
+                return new CachedResult(
+                    (new MatrixFactory())->create($qrCode),
+                    $cached,
+                    $this->mimeType()
+                );
+            }
+        }
+
+        $result = $this->build()->write($qrCode, $this->logo, $this->label);
+
+        if ($cacheFile !== null) {
+            $dir = dirname($cacheFile);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            @file_put_contents($cacheFile, $result->getString(), LOCK_EX);
+        }
+
+        return $result;
+    }
+
+    public function toDataUri(): string
+    {
+        $result = $this->writeResult();
+        return 'data:' . $this->mimeType() . ';base64,' . base64_encode($result->getString());
     }
 
     public function toString(): string
@@ -324,6 +393,16 @@ class Qr
         }
         if (isset($options['round_style'])) {
             $instance->roundStyle((string) $options['round_style']);
+        }
+        if (isset($options['label'])) {
+            $label = (string) $options['label'];
+            $instance->label($label, (int) ($options['label_font_size'] ?? 16), isset($options['label_font']) ? (string) $options['label_font'] : null);
+        }
+        if (isset($options['logo'])) {
+            $instance->logo((string) $options['logo'], (float) ($options['logo_scale'] ?? 0.3));
+        }
+        if (isset($options['encoding'])) {
+            $instance->encoding((string) $options['encoding']);
         }
         if (isset($options['format'])) {
             $format = strtolower($options['format']);
@@ -451,6 +530,10 @@ class Qr
 
     public static function color(int $red, int $green, int $blue): ColorInterface
     {
-        return new Color($red, $green, $blue);
+        return new Color(
+            max(0, min(255, $red)),
+            max(0, min(255, $green)),
+            max(0, min(255, $blue))
+        );
     }
 }

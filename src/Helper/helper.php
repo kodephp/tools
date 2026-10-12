@@ -988,7 +988,7 @@ if (!function_exists('qr_email')) {
      */
     function qr_email(string $email, ?string $subject = null, ?string $body = null, int $size = 300): Qr
     {
-        $qr = Qr::email($email, $subject, $body);
+        $qr = Qr::email($email, $subject ?? '', $body ?? '');
         if ($size !== 300) {
             $qr->size($size);
         }
@@ -1019,7 +1019,7 @@ if (!function_exists('qr_sms')) {
      */
     function qr_sms(string $phone, ?string $body = null, int $size = 300): Qr
     {
-        $qr = Qr::sms($phone, $body);
+        $qr = Qr::sms($phone, $body ?? '');
         if ($size !== 300) {
             $qr->size($size);
         }
