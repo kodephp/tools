@@ -39,4 +39,50 @@ final class IpTest extends TestCase
         self::assertSame(6, Ip::getVersion('::1'));
         self::assertNull(Ip::getVersion('invalid'));
     }
+
+    public function testDecodeLocationResponseMapsSuccessPayload(): void
+    {
+        $body = json_encode([
+            'status' => 'success',
+            'country' => 'China',
+            'countryCode' => 'CN',
+            'regionName' => 'Guangdong',
+            'region' => 'GD',
+            'city' => 'Shenzhen',
+            'timezone' => 'Asia/Shanghai',
+            'isp' => 'Example ISP',
+        ]);
+
+        $loc = Ip::decodeLocationResponse('8.8.8.8', $body);
+
+        self::assertIsArray($loc);
+        self::assertSame('8.8.8.8', $loc['ip']);
+        self::assertSame('China', $loc['country']);
+        self::assertSame('CN', $loc['countryCode']);
+        self::assertSame('Guangdong', $loc['region']);
+        self::assertSame('GD', $loc['regionCode']);
+        self::assertSame('Shenzhen', $loc['city']);
+        self::assertNull($loc['zip']);
+    }
+
+    public function testDecodeLocationResponseRejectsMalformedBodies(): void
+    {
+        // 非 JSON
+        self::assertNull(Ip::decodeLocationResponse('1.1.1.1', '<html>502</html>'));
+        // JSON 但顶层是字符串
+        self::assertNull(Ip::decodeLocationResponse('1.1.1.1', '"ok"'));
+        // JSON 列表（顶层非关联数组）
+        self::assertNull(Ip::decodeLocationResponse('1.1.1.1', '[1,2,3]'));
+        // 缺 status 字段
+        self::assertNull(Ip::decodeLocationResponse('1.1.1.1', '{"country":"X"}'));
+        // status 非 success
+        self::assertNull(Ip::decodeLocationResponse('1.1.1.1', '{"status":"fail","message":"private range"}'));
+    }
+
+    public function testGetLocationRejectsInvalidAndPrivateIps(): void
+    {
+        self::assertNull(Ip::getLocation('not-an-ip'));
+        self::assertNull(Ip::getLocation('192.168.1.1'));
+        self::assertNull(Ip::getLocation('127.0.0.1'));
+    }
 }

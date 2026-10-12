@@ -173,12 +173,24 @@ class Ip
         if ($response === false) {
             return null;
         }
-        
+
+        return self::decodeLocationResponse($ip, $response);
+    }
+
+    /**
+     * 解析位置服务响应体（@internal：getLocation 的纯函数半段，供测试注入）
+     *
+     * 响应形状完全不可信：非 JSON、顶层非关联数组（如字符串/列表）、
+     * 缺 status 字段或非 success 一律返回 null——避免对畸形响应取
+     * $data['status']/偏移产生 undefined key 告警或类型错误。
+     */
+    public static function decodeLocationResponse(string $ip, string $response): ?array
+    {
         $data = json_decode($response, true);
-        if (json_last_error() !== JSON_ERROR_NONE || $data['status'] !== 'success') {
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($data) || ($data['status'] ?? null) !== 'success') {
             return null;
         }
-        
+
         return [
             'ip' => $ip,
             'country' => $data['country'] ?? null,
