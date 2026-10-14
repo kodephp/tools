@@ -324,15 +324,57 @@ class Str
 
     /**
      * 字符串填充
+     *
+     * 按「显示宽度」（mb_strwidth）对齐而非字节数：CJK 全角字符占 2 列，
+     * 与终端实际占位一致；纯 ASCII 输入与原生 str_pad 行为完全一致。
+     *
      * @param string $str 字符串
-     * @param int $length 总长度
-     * @param string $pad 填充字符
+     * @param int $length 目标显示宽度
+     * @param string $pad 填充字符（串）
      * @param int $type 填充类型（STR_PAD_LEFT, STR_PAD_RIGHT, STR_PAD_BOTH）
      * @return string 填充后的字符串
      */
     public static function pad(string $str, int $length, string $pad = ' ', int $type = STR_PAD_RIGHT): string
     {
-        return str_pad($str, $length, $pad, $type);
+        $width = mb_strwidth($str, 'UTF-8');
+        if ($width >= $length || $pad === '') {
+            // 与 str_pad 语义一致：已达宽度不截短；空填充串原样返回
+            return $str;
+        }
+
+        $need = $length - $width;
+        $left = match ($type) {
+            STR_PAD_LEFT => $need,
+            STR_PAD_BOTH => intdiv($need, 2),
+            default => 0,
+        };
+        $right = $need - $left;
+
+        return self::padToWidth($pad, $left) . $str . self::padToWidth($pad, $right);
+    }
+
+    /**
+     * 按显示宽度生成填充内容（pad 串可多字符）
+     */
+    private static function padToWidth(string $pad, int $width): string
+    {
+        if ($width <= 0) {
+            return '';
+        }
+
+        $out = '';
+        $current = 0;
+        while ($current < $width) {
+            $w = max(1, mb_strwidth($pad, 'UTF-8'));
+            $out .= $pad;
+            $current += $w;
+            // 不足一整格时也补上：宁可超宽一格，也不留下半格错位
+            if ($current >= $width) {
+                break;
+            }
+        }
+
+        return $out;
     }
 
     /**

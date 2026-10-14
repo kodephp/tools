@@ -566,7 +566,7 @@ Str::plateType('沪AF12345');
 | `Str::reverse(string $str)` | 反转 | `Str::reverse('abc')` |
 | `Str::shuffle(string $str)` | 随机打乱 | `Str::shuffle('abc')` |
 | `Str::repeat(string $str, int $times)` | 重复 | `Str::repeat('a', 3)` |
-| `Str::pad(string $str, int $length, string $pad, int $type)` | 填充 | `Str::pad('a', 5, '0', STR_PAD_LEFT)` |
+| `Str::pad(string $str, int $length, string $pad, int $type)` | 填充（按显示宽度 `mb_strwidth` 对齐，CJK 全角占 2 列；ASCII 行为同 `str_pad`） | `Str::pad('a', 5, '0', STR_PAD_LEFT)` |
 | `Str::trim(string $str)` | 去空格 | `Str::trim(' abc ')` |
 | `Str::ucfirst(string $str)` | 首字母大写 | `Str::ucfirst('hello')` |
 | `Str::lcfirst(string $str)` | 首字母小写 | `Str::lcfirst('Hello')` |

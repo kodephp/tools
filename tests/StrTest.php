@@ -106,4 +106,26 @@ final class StrTest extends TestCase
         // 类型识别
         self::assertSame(Str::PLATE_NEW_ENERGY, Str::plateType('沪AF12345'));
     }
+
+    public function testPadKeepsAsciiBehaviorIdenticalToStrPad(): void
+    {
+        // 回归面：纯 ASCII 输入必须与原生 str_pad 完全一致
+        self::assertSame(str_pad('a', 4, ' ', STR_PAD_RIGHT), Str::pad('a', 4));
+        self::assertSame(str_pad('a', 6, '-', STR_PAD_LEFT), Str::pad('a', 6, '-', STR_PAD_LEFT));
+        self::assertSame(str_pad('a', 7, '-', STR_PAD_BOTH), Str::pad('a', 7, '-', STR_PAD_BOTH));
+        self::assertSame('a', Str::pad('a', 3, ''));        // 空填充串：原样
+        self::assertSame('ab', Str::pad('ab', 2));          // 已达宽度不截短
+    }
+
+    public function testPadAlignsByDisplayWidthForCjk(): void
+    {
+        // 传统按字节计长会把 CJK 补多列，终端里永远对不齐
+        self::assertSame('中 ', Str::pad('中', 3));              // 宽 2 -> 补 1
+        self::assertSame('中  ', Str::pad('中', 4));             // 宽 2 -> 补 2 空格 = 宽 4
+        self::assertSame('中中', Str::pad('中', 4, '中'));       // 显式全角填充串
+        self::assertSame('   中', Str::pad('中', 5, ' ', STR_PAD_LEFT));  // 宽 5 = 3 空格 + 宽 2
+        self::assertSame(' 中  ', Str::pad('中', 5, ' ', STR_PAD_BOTH));  // need=3 -> 左 1 右 2
+        // 填充串宽 3 > 需要 3：宁可超宽一格也不留半格错位（行为显式断言）
+        self::assertSame('中x中中x', Str::pad('中', 5, '中x', STR_PAD_BOTH));
+    }
 }
